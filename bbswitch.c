@@ -144,9 +144,9 @@ static int bbswitch_optimus_dsm(void) {
     char args[] = {1, 0, 0, 3};
     u32 result = 0;
 
-    if (!acpi_call_dsm(dis_handle, acpi_optimus_dsm_muid, 0x100, 0x1A, args,
+    if (acpi_call_dsm(dis_handle, acpi_optimus_dsm_muid, 0x100, 0x1A, args,
         &result)) {
-        printk(KERN_INFO "bbswitch: Result of Optimus _DSM call: %08X\n",
+        printk(KERN_DEBUG "bbswitch: Result of Optimus _DSM call: %08X\n",
             result);
         return 0;
     }
@@ -159,12 +159,12 @@ static int bbswitch_acpi_off(void) {
         char args[] = {2, 0, 0, 0};
         u32 result = 0;
 
-        if (!acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
+        if (acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
             &result)) {
             // failure
             return 1;
         }
-        printk(KERN_INFO "bbswitch: Result of _DSM call for OFF: %08X\n",
+        printk(KERN_DEBUG "bbswitch: Result of _DSM call for OFF: %08X\n",
             result);
     }
     return 0;
@@ -180,7 +180,7 @@ static int bbswitch_acpi_on(void) {
             // failure
             return 1;
         }
-        printk(KERN_INFO "bbswitch: Result of _DSM call for ON: %08X\n",
+        printk(KERN_DEBUG "bbswitch: Result of _DSM call for ON: %08X\n",
             result);
     }
     return 0;
