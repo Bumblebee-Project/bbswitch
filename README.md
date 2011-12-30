@@ -53,3 +53,4 @@ issues on this module in the issue tracker and provide the following details:
 - Your distribution and version (if applicable)
 - The output of `lspci -d10de: -vvv`
 - The version of your Xorg and the driver
+- The output of `acpidump` (run it as root, e.g. `sudo acpidump > acpidump.txt`)
