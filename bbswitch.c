@@ -141,17 +141,19 @@ static int has_dsm_func(const char muid[16], int revid, int sfnc) {
 }
 
 static int bbswitch_optimus_dsm(void) {
-    char args[] = {1, 0, 0, 3};
-    u32 result = 0;
+    if (dsm_type == DSM_TYPE_OPTIMUS) {
+        char args[] = {1, 0, 0, 3};
+        u32 result = 0;
 
-    if (acpi_call_dsm(dis_handle, acpi_optimus_dsm_muid, 0x100, 0x1A, args,
-        &result)) {
+        if (acpi_call_dsm(dis_handle, acpi_optimus_dsm_muid, 0x100, 0x1A, args,
+            &result)) {
+            // failure
+            return 1;
+        }
         printk(KERN_DEBUG "bbswitch: Result of Optimus _DSM call: %08X\n",
             result);
-        return 0;
     }
-    // failure
-    return 1;
+    return 0;
 }
 
 static int bbswitch_acpi_off(void) {
@@ -211,9 +213,9 @@ static void bbswitch_off(void) {
 
     printk(KERN_INFO "bbswitch: disabling discrete graphics\n");
 
-    if (dsm_type == DSM_TYPE_OPTIMUS && bbswitch_optimus_dsm()) {
-        printk(KERN_WARNING "bbswitch: ACPI call failed, the device is not"
-            " disabled\n");
+    if (bbswitch_optimus_dsm()) {
+        printk(KERN_WARNING "bbswitch: Optimus ACPI call failed, the device is"
+            " not disabled\n");
         return;
     }
 
