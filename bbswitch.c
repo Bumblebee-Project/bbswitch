@@ -21,6 +21,19 @@ MODULE_DESCRIPTION("Toggle the discrete graphics card");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
 MODULE_VERSION("0.2");
 
+enum {
+    CARD_UNCHANGED = -1,
+    CARD_OFF = 0,
+    CARD_ON = 1,
+};
+
+static int load_state = CARD_UNCHANGED;
+MODULE_PARM_DESC(load_state, "Initial card state (0 = off, 1 = on, -1 = unchanged)");
+module_param(load_state, int, 0400);
+static int unload_state = CARD_UNCHANGED;
+MODULE_PARM_DESC(unload_state, "Card state on unload (0 = off, 1 = on, -1 = unchanged)");
+module_param(unload_state, int, 0600);
+
 extern struct proc_dir_entry *acpi_root_dir;
 
 static const char acpi_optimus_dsm_muid[16] = {
@@ -357,6 +370,11 @@ static int __init bbswitch_init(void) {
         return -ENOMEM;
     }
 
+    if (load_state == CARD_ON)
+        bbswitch_on();
+    else if (load_state == CARD_OFF)
+        bbswitch_off();
+
     printk(KERN_INFO "bbswitch: Succesfully loaded. Discrete card %s is %s\n",
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
 
@@ -368,6 +386,14 @@ static int __init bbswitch_init(void) {
 
 static void __exit bbswitch_exit(void) {
     remove_proc_entry("bbswitch", acpi_root_dir);
+
+    if (unload_state == CARD_ON)
+        bbswitch_on();
+    else if (unload_state == CARD_OFF)
+        bbswitch_off();
+
+    printk(KERN_INFO "bbswitch: Unloaded. Discrete card %s is %s\n",
+        dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
 
     if (nb.notifier_call)
         unregister_pm_notifier(&nb);
