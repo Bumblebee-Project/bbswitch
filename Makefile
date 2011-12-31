@@ -14,3 +14,9 @@ clean:
 load:
 	-/sbin/rmmod $(modname)
 	/sbin/insmod $(modname).ko
+
+install_dkms_module:
+	./scripts/install_dkms.sh install
+
+uninstall_dkms_module:
+	./scripts/install_dkms.sh uninstall
