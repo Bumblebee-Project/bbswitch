@@ -1,5 +1,8 @@
 *Migrated from https://github.com/Lekensteyn/acpi-stuff*
 
+About
+-----
+
 bbswitch is a kernel module which automatically detects the required ACPI calls
 for two kinds of Optimus laptops. It has been verified to work with "real"
 Optimus and "legacy" Optimus laptops (at least, that is how I call them). The
@@ -19,7 +22,10 @@ detect the correct handle preceding _DSM and has some built-in safeguards:
   disabled again if that was the case before suspending. Hibernation should
   work, but it not tested.
 
-To use it, build the module first (kernel headers are required):
+Build
+-----
+
+Build the module (kernel headers are required):
 
     make
 Then load it (requires root privileges, i.e. `sudo`):
@@ -29,14 +35,23 @@ If your card is supported, there should be no error. Otherwise, you get a "No
 such device" (ENODEV) error. Check your kernel log (dmesg) for more
 information.
 
-Usage (`#` means "run with root privileges, i.e. run it prefixed with `sudo `):
+### DKMS support
 
-Get the status:
+inside the "dkms" directory a file is provided for dkms support. Note that the
+kernel version must be changed.
+
+Usage
+-----
+
+bbswitch has three commands to check the card status and switching 
+(`#` means "run with root privileges, i.e. run it prefixed with `sudo `):
+
+### Get the status:
 
     # cat /proc/acpi/bbswitch  
     0000:01:00.0 ON
 
-Turn the card off, respectively on:
+### Turn the card off, respectively on:
 
     # tee /proc/acpi/bbswitch <<<OFF
     # tee /proc/acpi/bbswitch <<<ON
@@ -45,6 +60,10 @@ unload the driver,
 
     $ dmesg |tail -1
     bbswitch: device 0000:01:00.0 is in use by driver 'nouveau', refusing OFF
+
+Reporting bugs
+--------------
+
 This module has been integrated in Bumblebee "Tumbleweed". Please report any
 issues on this module in the issue tracker and provide the following details:
 
