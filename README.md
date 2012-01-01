@@ -35,10 +35,13 @@ If your card is supported, there should be no error. Otherwise, you get a "No
 such device" (ENODEV) error. Check your kernel log (dmesg) for more
 information.
 
-### DKMS support
+DKMS support
+------------
 
-inside the "dkms" directory a file is provided for dkms support. Note that the
-kernel version must be changed.
+Change `#MODULE_VERSION#` to the current version of bbswitch. Copy the
+Makefile, C source and dkms.conf file to `/usr/src/bbswitch-VERSION/` (replace
+VERSION with the current version of bbswitch which has been inserted for
+`#MODULE_VERSION#`.
 
 Usage
 -----
