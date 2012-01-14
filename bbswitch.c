@@ -19,7 +19,7 @@
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
-MODULE_VERSION("0.2");
+MODULE_VERSION("0.3");
 
 enum {
     CARD_UNCHANGED = -1,
@@ -328,6 +328,7 @@ static struct file_operations bbswitch_fops = {
 static int __init bbswitch_init(void) {
     struct proc_dir_entry *acpi_entry;
     struct pci_dev *pdev = NULL;
+    acpi_handle igd_handle = NULL;
     int class = PCI_CLASS_DISPLAY_VGA << 8;
 
     while ((pdev = pci_get_class(class, pdev)) != NULL) {
@@ -338,10 +339,15 @@ static int __init bbswitch_init(void) {
         if (!handle)
             continue;
 
-        if (pdev->vendor != PCI_VENDOR_ID_INTEL) {
+        acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
+
+        if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
+            igd_handle = handle;
+            printk(KERN_INFO "bbswitch: Found integrated VGA device %s: %s\n",
+                dev_name(&pdev->dev), (char *)buf.pointer);
+        } else {
             dis_dev = pdev;
             dis_handle = handle;
-            acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
             printk(KERN_INFO "bbswitch: Found discrete VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
         }
@@ -360,8 +366,17 @@ static int __init bbswitch_init(void) {
         dsm_type = DSM_TYPE_NVIDIA;
         printk(KERN_INFO "bbswitch: detected a nVidia _DSM function\n");
     } else {
-        printk(KERN_ERR "bbswitch: No suitable _DSM call found.\n");
-        return -ENODEV;
+       /* At least two Acer machines are known to use the intel ACPI handle
+        * with the legacy nvidia DSM */
+        dis_handle = igd_handle;
+        if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
+            dsm_type = DSM_TYPE_NVIDIA;
+            printk(KERN_INFO "bbswitch: detected a nVidia _DSM function on the"
+                " integrated video card\n");
+        } else {
+            printk(KERN_ERR "bbswitch: No suitable _DSM call found.\n");
+            return -ENODEV;
+        }
     }
 
     acpi_entry = proc_create("bbswitch", 0660, acpi_root_dir, &bbswitch_fops);
