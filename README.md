@@ -78,7 +78,16 @@ issues on this module in the issue tracker and provide the following details:
   the instructions are listed in the bug description. Summary: install the
   packages containing `dmidecode`, `acpidump` and `iasl` and then run:
 
-    wget http://lekensteyn.nl/files/get-acpi-info.sh
-    sh get-acpi-info.sh
+        wget http://lekensteyn.nl/files/get-acpi-info.sh
+        sh get-acpi-info.sh
+- Information about the ACPI handles associated with PCI devices. Since this is
+  a kernel module, you'll need kernel headers, gcc and automake. Commands:
+
+        git clone git://github.com/Lekensteyn/acpi-stuff.git --depth 1
+        cd acpi-stuff/acpi_dump_info
+        make
+        sudo make load
+        cat /proc/acpi/dump_info
+
 Upload the generated tarball on the above Launchpad URL and provide a link to
 the comment containing your report.
