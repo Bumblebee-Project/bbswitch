@@ -64,6 +64,10 @@ unload the driver,
     $ dmesg |tail -1
     bbswitch: device 0000:01:00.0 is in use by driver 'nouveau', refusing OFF
 
+Do **not** attempt to load a driver while the card is off or the card won't be
+usable until the PCI configuration space has been recovered (for example, after
+writing the contents manually or rebooting).
+
 Reporting bugs
 --------------
 
