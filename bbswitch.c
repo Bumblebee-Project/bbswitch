@@ -19,7 +19,7 @@
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
-MODULE_VERSION("0.2");
+MODULE_VERSION("0.3");
 
 enum {
     CARD_UNCHANGED = -1,
