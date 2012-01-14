@@ -68,6 +68,39 @@ Do **not** attempt to load a driver while the card is off or the card won't be
 usable until the PCI configuration space has been recovered (for example, after
 writing the contents manually or rebooting).
 
+### Module options
+
+The module has some options that control the behavior on loading and unloading:
+`load_state` and `unload_state`. Valid values are `-1`, `0` and `1` meaning "do
+not change the card state", "turn the card off" and "turn the card on"
+respectively. For example, if you want to have `bbswitch` disable the card
+immediately when loading the module while disabling the card on unload, load the
+module with:
+
+    # modprobe bbswitch load_state=0 unload_state=1
+
+The `unload_state` value can be changed on runtime, the above command yields the
+same behavior as:
+
+    # modprobe bbswitch load_state=0
+    # echo 1 | tee /sys/module/bbswitch/parameters/unload_state
+
+If not explictly set, the default behavior is not to change the power state of
+the discrete video card which equals to `load_state=-1 unload_state=-1`.
+
+### Disable card on boot
+
+These options can be useful to disable the card on boot time. Depending on your
+distribution, `/etc/modules`, `/etc/modules.conf` or some other file can be used
+to load modules on boot time. Adding the below line to the file makes the card
+get disabled on boot:
+
+    bbswitch load_state=0
+
+You have to update your initial ramdisk (initrd) for the changes propagate to
+the boot process. On Debian and Ubuntu, this can performed by running
+`update-initramfs -u` as root.
+
 Reporting bugs
 --------------
 
