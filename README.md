@@ -73,6 +73,12 @@ issues on this module in the issue tracker and provide the following details:
 - The output of `dmesg | grep -C 10 bbswitch:`
 - The kernel version `uname -a`
 - Your distribution and version (if applicable)
-- The output of `lspci -d10de: -vvv`
 - The version of your Xorg and the driver
-- The output of `acpidump` (run it as root, e.g. `sudo acpidump > acpidump.txt`)
+- Submit your machine information on https://bugs.launchpad.net/bugs/752542;
+  the instructions are listed in the bug description. Summary: install the
+  packages containing `dmidecode`, `acpidump` and `iasl` and then run:
+
+    wget http://lekensteyn.nl/files/get-acpi-info.sh
+    sh get-acpi-info.sh
+Upload the generated tarball on the above Launchpad URL and provide a link to
+the comment containing your report.
