@@ -329,11 +329,15 @@ static int __init bbswitch_init(void) {
     struct proc_dir_entry *acpi_entry;
     struct pci_dev *pdev = NULL;
     acpi_handle igd_handle = NULL;
-    int class = PCI_CLASS_DISPLAY_VGA << 8;
 
-    while ((pdev = pci_get_class(class, pdev)) != NULL) {
+    while ((pdev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pdev)) != NULL) {
         struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
         acpi_handle handle;
+        int pci_class = pdev->class >> 8;
+
+        if (pci_class != PCI_CLASS_DISPLAY_VGA &&
+            pci_class != PCI_CLASS_DISPLAY_3D)
+            continue;
 
         handle = DEVICE_ACPI_HANDLE(&pdev->dev);
         if (!handle) {
