@@ -336,8 +336,11 @@ static int __init bbswitch_init(void) {
         acpi_handle handle;
 
         handle = DEVICE_ACPI_HANDLE(&pdev->dev);
-        if (!handle)
+        if (!handle) {
+            printk(KERN_WARNING "bbswitch: cannot find ACPI handle for VGA"
+                " device %s\n", dev_name(&pdev->dev));
             continue;
+        }
 
         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
 
