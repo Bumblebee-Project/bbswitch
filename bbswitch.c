@@ -19,7 +19,7 @@
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
-MODULE_VERSION("0.4");
+MODULE_VERSION("0.4.1");
 
 enum {
     CARD_UNCHANGED = -1,
@@ -190,7 +190,7 @@ static int bbswitch_acpi_on(void) {
         char args[] = {1, 0, 0, 0};
         u32 result = 0;
 
-        if (!acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
+        if (acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
             &result)) {
             // failure
             return 1;

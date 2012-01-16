@@ -1,3 +1,8 @@
+Version 0.4.1 - 16 January 2012
+
+* Corrected a small error that yielded an confusing error message "The discrete
+  card could not be enabled by a _DSM call"
+
 Version 0.4 - 15 January 2012
 
 * Support for models that have a "3D controller" instead of "VGA compatible
