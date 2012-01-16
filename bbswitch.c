@@ -190,7 +190,7 @@ static int bbswitch_acpi_on(void) {
         char args[] = {1, 0, 0, 0};
         u32 result = 0;
 
-        if (!acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
+        if (acpi_call_dsm(dis_handle, acpi_nvidia_dsm_muid, 0x102, 0x3, args,
             &result)) {
             // failure
             return 1;
