@@ -38,10 +38,16 @@ information.
 DKMS support
 ------------
 
-Change `#MODULE_VERSION#` to the current version of bbswitch. Copy the
-Makefile, C source and dkms.conf file to `/usr/src/bbswitch-VERSION/` (replace
-VERSION with the current version of bbswitch which has been inserted for
-`#MODULE_VERSION#`.
+If you have DKMS installed, you can install bbswitch in such a way that it
+survives kernel upgrades. It is recommended to remove older versions of bbswitch
+by running `dkms remove bbswitch/OLDVERSION --all` as root. To install the new
+version, simply run:
+
+    # make -f Makefile.dkms
+
+To uninstall it, run:
+
+    # make -f Makefile.dkms uninstall
 
 Usage
 -----
