@@ -386,7 +386,7 @@ static int __init bbswitch_init(void) {
         }
     }
 
-    acpi_entry = proc_create("bbswitch", 0660, acpi_root_dir, &bbswitch_fops);
+    acpi_entry = proc_create("bbswitch", 0664, acpi_root_dir, &bbswitch_fops);
     if (acpi_entry == NULL) {
         printk(KERN_ERR "bbswitch: Couldn't create proc entry\n");
         return -ENOMEM;
