@@ -1,6 +1,6 @@
 modname := bbswitch
 DKMS := dkms
-modver := $(shell awk -F'"' '/MODULE_VERSION/{print $$2}' < bbswitch.c)
+modver := $(shell awk -F'"' '/define *BBSWITCH_VERSION/{print $$2}' < bbswitch.c)
 
 # directory in which generated files are stored
 DKMS_DEST := /usr/src/$(modname)-$(modver)

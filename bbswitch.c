@@ -16,10 +16,12 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 
+#define BBSWITCH_VERSION "0.4.1"
+
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
-MODULE_VERSION("0.4.1");
+MODULE_VERSION(BBSWITCH_VERSION);
 
 enum {
     CARD_UNCHANGED = -1,
@@ -405,6 +407,8 @@ static int __init bbswitch_init(void) {
     struct proc_dir_entry *acpi_entry;
     struct pci_dev *pdev = NULL;
     acpi_handle igd_handle = NULL;
+
+    printk(KERN_INFO "bbswitch: version %s\n", BBSWITCH_VERSION);
 
     while ((pdev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pdev)) != NULL) {
         struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
