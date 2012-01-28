@@ -13,5 +13,4 @@ clean:
 
 load:
 	-/sbin/rmmod $(modname)
-	/sbin/modprobe wmi
 	/sbin/insmod $(modname).ko
