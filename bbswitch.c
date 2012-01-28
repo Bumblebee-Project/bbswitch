@@ -44,7 +44,7 @@ static const char acpi_optimus_dsm_muid[16] = {
 };
 
 #define MXM_WMMX_GUID "F6CB5C3C-9CAE-4EBD-B577-931EA32A2CC0"
-#define MXM_WMMX_FUNC_DSM 0x4D53445F /* NVIDIA/Optimus DSM */
+#define MXM_WMMX_FUNC_DSM 0x4D53445F /* NVIDIA DSM */
 static const char acpi_nvidia_dsm_muid[16] = {
     0xA0, 0xA0, 0x95, 0x9D, 0x60, 0x00, 0x48, 0x4D,
     0xB3, 0x4D, 0x7E, 0x5F, 0xEA, 0x12, 0x9F, 0xD4
@@ -73,7 +73,6 @@ enum dsm_type {
     DSM_TYPE_OPTIMUS,
     DSM_TYPE_NVIDIA,
     /* _DSM call through a WMI MX method */
-    DSM_TYPE_OPTIMUS_WMI,
     DSM_TYPE_NVIDIA_WMI,
 };
 static enum dsm_type dsm_type = DSM_TYPE_UNSUPPORTED;
@@ -221,22 +220,16 @@ static int has_wmi_func(const char muid[16], int revid, int sfnc) {
 }
 
 static int bbswitch_optimus_dsm(void) {
-    char args[] = {1, 0, 0, 3};
-    u32 result = 0;
     if (dsm_type == DSM_TYPE_OPTIMUS) {
+        char args[] = {1, 0, 0, 3};
+        u32 result = 0;
+
         if (acpi_call_dsm(dis_handle, acpi_optimus_dsm_muid, 0x100, 0x1A, args,
             &result)) {
             // failure
             return 1;
         }
         printk(KERN_DEBUG "bbswitch: Result of Optimus _DSM call: %08X\n",
-            result);
-    } else if (dsm_type == DSM_TYPE_OPTIMUS_WMI) {
-        if (wmmx_call(acpi_optimus_dsm_muid, 0x100, 0x1A, args, &result)) {
-            // failure
-            return 1;
-        }
-        printk(KERN_DEBUG "bbswitch: Result of WMMX call for Optimus: %08X\n",
             result);
     }
     return 0;
@@ -453,20 +446,13 @@ static int __init bbswitch_init(void) {
         return -ENODEV;
     }
 
-    if (has_wmi_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
-        dsm_type = DSM_TYPE_OPTIMUS_WMI;
-        printk(KERN_INFO "bbswitch: detected an Optimus WMMX function\n");
+    if (has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
+        dsm_type = DSM_TYPE_OPTIMUS;
+        printk(KERN_INFO "bbswitch: detected an Optimus _DSM function\n");
     } else if (has_wmi_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
         dsm_type = DSM_TYPE_NVIDIA_WMI;
         printk(KERN_INFO "bbswitch: detected a nVidia WMMX function\n");
-    } else if (has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
-        /* necessary for at least Lenovo Ideapad Z570 which does not have the
-         * WMMX method */
-        dsm_type = DSM_TYPE_OPTIMUS;
-        printk(KERN_INFO "bbswitch: detected an Optimus _DSM function\n");
     } else if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
-        /* necessary for at least Dell XPS L501X bios A08 which does not have
-         * the WMMX method */
         dsm_type = DSM_TYPE_NVIDIA;
         printk(KERN_INFO "bbswitch: detected a nVidia _DSM function\n");
     } else {
