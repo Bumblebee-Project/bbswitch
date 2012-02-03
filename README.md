@@ -49,6 +49,35 @@ To uninstall it, run:
 
     # make -f Makefile.dkms uninstall
 
+Lenovo IdeaPad Y470/Y570
+------------------------
+Until [this kernel bug](https://bugzilla.kernel.org/show_bug.cgi?id=42696) is
+fixed, you need to apply an ugly hack on these laptops to make bbswitch and the
+driver (both nouveau and nvidia) work. For now I have decided not to put the
+hack in the bbswitch module since it is a very ugly hack that is comparable to
+writing a maximum allowable speed of 130 km/h on a traffic sign for a road
+where 120 km/h is allowed just because the radar gun does not work properly.
+
+To make use of it, use the `hack-lenovo` branch. An example using DKMS:
+
+    $ git clone git://github.com/Bumblebee-Project/bbswitch.git -b hack-lenovo
+    $ cd bbswitch
+    $ mkdir /usr/src/acpi-handle-hack-0.0.1
+    # cp Makefile acpi-handle-hack.c /usr/src/acpi-handle-hack-0.0.1
+    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.1
+    # dkms add acpi-handle-hack/0.0.1
+    # dkms build acpi-handle-hack/0.0.1
+    # dkms install acpi-handle-hack/0.0.1
+If everything goes well, you now need to get the hack loaded on boot. On
+Ubuntu and Debian, this can be done with:
+
+    echo acpi-handle-hack | sudo tee -a /etc/modules
+    sudo update-initramfs -u
+For other systems, adopt the instructions from the *Disable card on boot*
+section below. Please do not copy these instructions to blogs/forums/whatever
+without warning that the method is a hack (you can refer to the metaphore above)
+and that it may crash the machine if incorrectly applied.
+
 Usage
 -----
 
