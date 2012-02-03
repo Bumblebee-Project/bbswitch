@@ -68,7 +68,7 @@ To make use of it, use the `hack-lenovo` branch. An example using DKMS:
     $ cd bbswitch
     $ mkdir /usr/src/acpi-handle-hack-0.0.1
     # cp Makefile acpi-handle-hack.c /usr/src/acpi-handle-hack-0.0.1
-    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.1
+    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.1/dkms.conf
     # dkms add acpi-handle-hack/0.0.1
     # dkms build acpi-handle-hack/0.0.1
     # dkms install acpi-handle-hack/0.0.1
