@@ -58,6 +58,10 @@ hack in the bbswitch module since it is a very ugly hack that is comparable to
 writing a maximum allowable speed of 130 km/h on a traffic sign for a road
 where 120 km/h is allowed just because the radar gun does not work properly.
 
+The module has been tested on a Lenovo IdeaPad Y570 running an up-to-date
+version of Ubuntu 11.10 Oneiric (64-bit) with Bumblebee 3.0 (3.0-1~oneiricppa2)
+installed using the nvidia driver.
+
 To make use of it, use the `hack-lenovo` branch. An example using DKMS:
 
     $ git clone git://github.com/Bumblebee-Project/bbswitch.git -b hack-lenovo
@@ -76,7 +80,10 @@ Ubuntu and Debian, this can be done with:
 For other systems, adopt the instructions from the *Disable card on boot*
 section below. Please do not copy these instructions to blogs/forums/whatever
 without warning that the method is a hack (you can refer to the metaphore above)
-and that it may crash the machine if incorrectly applied.
+and that it may crash the machine if incorrectly applied. To apply these
+changes, you have to reboot (technically, unloading nvidia/nouveau, bbswitch and
+stopping bumblebeed, `modprobe acpi-handle-hack` and starting bumblebeed should
+work as well, but saying reboot is shorter)
 
 Usage
 -----
