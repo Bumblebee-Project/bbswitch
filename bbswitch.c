@@ -71,12 +71,12 @@ static struct notifier_block nb;
 /* whether the card was off before suspend or not; on: 0, off: 1 */
 int dis_before_suspend_disabled;
 
-static char *buffer_to_string(const char buffer[], char *target) {
+static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
-    for (i=0; i<sizeof(buffer); i++) {
+    for (i=0; i<n; i++) {
         sprintf(target + i * 5, "%02X,", buffer[i]);
     }
-    target[sizeof(buffer) * 5] = '\0';
+    target[n * 5] = '\0';
     return target;
 }
 
@@ -112,12 +112,12 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
 
     err = acpi_evaluate_object(handle, "_DSM", &input, &output);
     if (err) {
-        char tmp[5 * max(sizeof(muid), sizeof(args))];
+        char tmp[5 * 16]; /* enough space for muid or args with separators */
 
         printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} %X %X"
             " {%s}: %s\n",
-            buffer_to_string(muid, tmp), revid, func,
-            buffer_to_string(args, tmp), acpi_format_exception(err));
+            buffer_to_string(muid, 16, tmp), revid, func,
+            buffer_to_string(args,  4, tmp), acpi_format_exception(err));
         return err;
     }
 
