@@ -111,12 +111,13 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
 
     err = acpi_evaluate_object(handle, "_DSM", &input, &output);
     if (err) {
-        char tmp[5 * 16]; /* enough space for muid or args with separators */
+        char muid_str[5 * 16];
+        char args_str[5 * 4];
 
         printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} %X %X"
             " {%s}: %s\n",
-            buffer_to_string(muid, 16, tmp), revid, func,
-            buffer_to_string(args,  4, tmp), acpi_format_exception(err));
+            buffer_to_string(muid, 16, muid_str), revid, func,
+            buffer_to_string(args,  4, args_str), acpi_format_exception(err));
         return err;
     }
 
