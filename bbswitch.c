@@ -74,7 +74,7 @@ int dis_before_suspend_disabled;
 static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
     for (i=0; i<n; i++) {
-        snprintf(target + i * 5, 5 * (n - i), "%02X,", buffer ? buffer[i] : 0);
+        snprintf(target + i * 5, 5 * (n - i), "0x%02X,", buffer ? buffer[i] & 0xFF : 0);
     }
     return target;
 }
@@ -114,7 +114,7 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
         char muid_str[5 * 16];
         char args_str[5 * 4];
 
-        printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} %X %X"
+        printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} 0x%X 0x%X"
             " {%s}: %s\n",
             buffer_to_string(muid, 16, muid_str), revid, func,
             buffer_to_string(args,  4, args_str), acpi_format_exception(err));
