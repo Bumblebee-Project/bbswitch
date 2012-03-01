@@ -74,7 +74,7 @@ int dis_before_suspend_disabled;
 static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
     for (i=0; i<n; i++) {
-        snprintf(target + i * 5, 5 * (n - i), "%02X,", buffer[i]);
+        snprintf(target + i * 5, 5 * (n - i), "%02X,", buffer ? buffer[i] : 0);
     }
     return target;
 }
