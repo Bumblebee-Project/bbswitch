@@ -80,7 +80,7 @@ The module has some options that control the behavior on loading and unloading:
 `load_state` and `unload_state`. Valid values are `-1`, `0` and `1` meaning "do
 not change the card state", "turn the card off" and "turn the card on"
 respectively. For example, if you want to have `bbswitch` disable the card
-immediately when loading the module while disabling the card on unload, load the
+immediately when loading the module while enabling the card on unload, load the
 module with:
 
     # modprobe bbswitch load_state=0 unload_state=1
