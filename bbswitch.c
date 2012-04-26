@@ -16,7 +16,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 
-#define BBSWITCH_VERSION "0.4.1"
+#define BBSWITCH_VERSION "0.4.2"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
