@@ -38,10 +38,16 @@ information.
 DKMS support
 ------------
 
-Change `#MODULE_VERSION#` to the current version of bbswitch. Copy the
-Makefile, C source and dkms.conf file to `/usr/src/bbswitch-VERSION/` (replace
-VERSION with the current version of bbswitch which has been inserted for
-`#MODULE_VERSION#`.
+If you have DKMS installed, you can install bbswitch in such a way that it
+survives kernel upgrades. It is recommended to remove older versions of bbswitch
+by running `dkms remove bbswitch/OLDVERSION --all` as root. To install the new
+version, simply run:
+
+    # make -f Makefile.dkms
+
+To uninstall it, run:
+
+    # make -f Makefile.dkms uninstall
 
 Usage
 -----
@@ -74,7 +80,7 @@ The module has some options that control the behavior on loading and unloading:
 `load_state` and `unload_state`. Valid values are `-1`, `0` and `1` meaning "do
 not change the card state", "turn the card off" and "turn the card on"
 respectively. For example, if you want to have `bbswitch` disable the card
-immediately when loading the module while disabling the card on unload, load the
+immediately when loading the module while enabling the card on unload, load the
 module with:
 
     # modprobe bbswitch load_state=0 unload_state=1

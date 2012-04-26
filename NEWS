@@ -1,3 +1,11 @@
+Version 0.4.2 - 26 April 2012
+
+* Fixed a documentation error on unload_state.
+* Added Makefile.dkms and documentation for easier installation using DKMS.
+* Make /proc/acpi/bbswitch world-writable
+* Fix NULL pointer dereference when reporting a failure during ACPI method
+  evaluation.
+
 Version 0.4.1 - 16 January 2012
 
 * Corrected a small error that yielded an confusing error message "The discrete
