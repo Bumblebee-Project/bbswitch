@@ -49,8 +49,8 @@ To uninstall it, run:
 
     # make -f Makefile.dkms uninstall
 
-Lenovo IdeaPad Y470/Y570
-------------------------
+Lenovo IdeaPad Y470/Y570 and Toshiba SATELLITE P870
+---------------------------------------------------
 Until [this kernel bug](https://bugzilla.kernel.org/show_bug.cgi?id=42696) is
 fixed, you need to apply an ugly hack on these laptops to make bbswitch and the
 driver (both nouveau and nvidia) work. For now I have decided not to put the
