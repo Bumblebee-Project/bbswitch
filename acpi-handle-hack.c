@@ -20,9 +20,11 @@ static acpi_handle orig_handle;
  * Returns true if the system needs an ACPI handle hack
  */
 static bool __init need_acpi_handle_hack(void) {
-	return dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y470             ") ||
-		dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y570             ") ||
-		dmi_match(DMI_PRODUCT_VERSION, "LENOVO IDEAPAD Y570 ") /* sys-product-name: PIQY0 */;
+	return dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y470             ")
+		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y570             ")
+		|| dmi_match(DMI_PRODUCT_VERSION, "LENOVO IDEAPAD Y570 ") /* sys-product-name: PIQY0 */
+		|| dmi_match(DMI_PRODUCT_VERSION, "PSPLBE-01V00HFR") /* TOSHIBA SATELLITE P870 */
+		;
 }
 
 static struct pci_dev __init *get_discrete_device(void) {
