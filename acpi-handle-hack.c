@@ -21,6 +21,7 @@ static acpi_handle orig_handle;
  */
 static bool __init need_acpi_handle_hack(void) {
 	return dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y470             ")
+		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y480")	
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y570             ")
 		|| dmi_match(DMI_PRODUCT_VERSION, "LENOVO IDEAPAD Y570 ") /* sys-product-name: PIQY0 */
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y580")
