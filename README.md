@@ -40,8 +40,8 @@ DKMS support
 
 If you have DKMS installed, you can install bbswitch in such a way that it
 survives kernel upgrades. It is recommended to remove older versions of bbswitch
-by running `dkms remove bbswitch/OLDVERSION --all` as root. To install the new
-version, simply run:
+by running `dkms remove -m bbswitch -v OLDVERSION --all` as root. To install
+the new version, simply run:
 
     # make -f Makefile.dkms
 
