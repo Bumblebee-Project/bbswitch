@@ -32,8 +32,13 @@ static bool __init need_acpi_handle_hack(void) {
 
 static struct pci_dev __init *get_discrete_device(void) {
 	struct pci_dev *pdev = NULL;
-	int class = PCI_CLASS_DISPLAY_VGA << 8;
-	while ((pdev = pci_get_class(class, pdev)) != NULL) {
+	while ((pdev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pdev)) != NULL) {
+		int pci_class = pdev->class >> 8;
+
+		if (pci_class != PCI_CLASS_DISPLAY_VGA &&
+			pci_class != PCI_CLASS_DISPLAY_3D)
+			continue;
+
 		if (pdev->vendor != PCI_VENDOR_ID_INTEL) {
 			return pdev;
 		}
