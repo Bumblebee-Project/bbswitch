@@ -40,8 +40,8 @@ DKMS support
 
 If you have DKMS installed, you can install bbswitch in such a way that it
 survives kernel upgrades. It is recommended to remove older versions of bbswitch
-by running `dkms remove bbswitch/OLDVERSION --all` as root. To install the new
-version, simply run:
+by running `dkms remove -m bbswitch -v OLDVERSION --all` as root. To install
+the new version, simply run:
 
     # make -f Makefile.dkms
 
@@ -116,7 +116,7 @@ The module has some options that control the behavior on loading and unloading:
 `load_state` and `unload_state`. Valid values are `-1`, `0` and `1` meaning "do
 not change the card state", "turn the card off" and "turn the card on"
 respectively. For example, if you want to have `bbswitch` disable the card
-immediately when loading the module while disabling the card on unload, load the
+immediately when loading the module while enabling the card on unload, load the
 module with:
 
     # modprobe bbswitch load_state=0 unload_state=1

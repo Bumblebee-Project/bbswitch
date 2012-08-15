@@ -13,12 +13,12 @@ src_install:
 	sed 's/#MODULE_VERSION#/$(modver)/' dkms/dkms.conf > '$(DKMS_DEST)/dkms.conf'
 
 build: src_install
-	$(DKMS) build 'bbswitch/$(modver)'
+	$(DKMS) build -m bbswitch -v $(modver)
 
 install: build
-	$(DKMS) install 'bbswitch/$(modver)'
+	$(DKMS) install -m bbswitch -v $(modver)
 
 uninstall:
-	$(DKMS) remove bbswitch/$(modver) --all
+	$(DKMS) remove -m bbswitch -v $(modver) --all
 
 .PHONY: all src_install build install uninstall

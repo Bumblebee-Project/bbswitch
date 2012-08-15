@@ -16,7 +16,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 
-#define BBSWITCH_VERSION "0.4.1"
+#define BBSWITCH_VERSION "0.4.2"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
@@ -71,12 +71,11 @@ static struct notifier_block nb;
 /* whether the card was off before suspend or not; on: 0, off: 1 */
 int dis_before_suspend_disabled;
 
-static char *buffer_to_string(const char buffer[], char *target) {
+static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
-    for (i=0; i<sizeof(buffer); i++) {
-        sprintf(target + i * 5, "%02X,", buffer[i]);
+    for (i=0; i<n; i++) {
+        snprintf(target + i * 5, 5 * (n - i), "0x%02X,", buffer ? buffer[i] & 0xFF : 0);
     }
-    target[sizeof(buffer) * 5] = '\0';
     return target;
 }
 
@@ -112,12 +111,13 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
 
     err = acpi_evaluate_object(handle, "_DSM", &input, &output);
     if (err) {
-        char tmp[5 * max(sizeof(muid), sizeof(args))];
+        char muid_str[5 * 16];
+        char args_str[5 * 4];
 
-        printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} %X %X"
+        printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} 0x%X 0x%X"
             " {%s}: %s\n",
-            buffer_to_string(muid, tmp), revid, func,
-            buffer_to_string(args, tmp), acpi_format_exception(err));
+            buffer_to_string(muid, 16, muid_str), revid, func,
+            buffer_to_string(args,  4, args_str), acpi_format_exception(err));
         return err;
     }
 
