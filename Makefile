@@ -14,3 +14,14 @@ clean:
 load:
 	-/sbin/rmmod $(modname)
 	/sbin/insmod $(modname).ko
+
+install:
+	mkdir -p /lib/modules/$(KVERSION)/misc/$(modname)
+	install -m 0755 -o root -g root $(modname).ko /lib/modules/$(KVERSION)/misc/$(modname)
+	depmod -a
+
+uninstall:
+	rm /lib/modules/$(KVERSION)/misc/$(modname)/$(modname).ko
+	rmdir /lib/modules/$(KVERSION)/misc/$(modname)
+	rmdir /lib/modules/$(KVERSION)/misc
+	depmod -a
