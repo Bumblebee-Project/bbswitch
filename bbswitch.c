@@ -237,7 +237,7 @@ static void bbswitch_off(void) {
     pci_save_state(dis_dev);
     pci_clear_master(dis_dev);
     pci_disable_device(dis_dev);
-    pci_set_power_state(dis_dev, PCI_D3hot);
+    pci_set_power_state(dis_dev, PCI_D3cold);
 
     if (bbswitch_acpi_off())
         printk(KERN_WARNING "bbswitch: The discrete card could not be disabled"
