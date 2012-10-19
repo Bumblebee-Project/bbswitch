@@ -17,6 +17,7 @@
 #include <asm/uaccess.h>
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
+#include <linux/pm_runtime.h>
 
 #define BBSWITCH_VERSION "0.4.2"
 
@@ -256,6 +257,17 @@ static void bbswitch_on(void) {
     pci_set_master(dis_dev);
 }
 
+/* power bus so we can read PCI configuration space */
+static void dis_dev_get(void) {
+    if (dis_dev->bus && dis_dev->bus->self)
+        pm_runtime_get_sync(&dis_dev->bus->self->dev);
+}
+
+static void dis_dev_put(void) {
+    if (dis_dev->bus && dis_dev->bus->self)
+        pm_runtime_put_sync(&dis_dev->bus->self->dev);
+}
+
 static ssize_t bbswitch_proc_write(struct file *fp, const char __user *buff,
     size_t len, loff_t *off) {
     char cmd[8];
@@ -266,19 +278,25 @@ static ssize_t bbswitch_proc_write(struct file *fp, const char __user *buff,
     if (copy_from_user(cmd, buff, len))
         return -EFAULT;
 
+    dis_dev_get();
+
     if (strncmp(cmd, "OFF", 3) == 0)
         bbswitch_off();
 
     if (strncmp(cmd, "ON", 2) == 0)
         bbswitch_on();
 
+    dis_dev_put();
+
     return len;
 }
 
 static int bbswitch_proc_show(struct seq_file *seqfp, void *p) {
     // show the card state. Example output: 0000:01:00:00 ON
+    dis_dev_get();
     seq_printf(seqfp, "%s %s\n", dev_name(&dis_dev->dev),
              is_card_disabled() ? "OFF" : "ON");
+    dis_dev_put();
     return 0;
 }
 static int bbswitch_proc_open(struct inode *inode, struct file *file) {
@@ -290,19 +308,24 @@ static int bbswitch_pm_handler(struct notifier_block *nbp,
     switch (event_type) {
     case PM_HIBERNATION_PREPARE:
     case PM_SUSPEND_PREPARE:
+        dis_dev_get();
         dis_before_suspend_disabled = is_card_disabled();
         // enable the device before suspend to avoid the PCI config space from
         // being saved incorrectly
         if (dis_before_suspend_disabled)
             bbswitch_on();
+        dis_dev_put();
         break;
     case PM_POST_HIBERNATION:
     case PM_POST_SUSPEND:
     case PM_POST_RESTORE:
         // after suspend, the card is on, but if it was off before suspend,
         // disable it again
-        if (dis_before_suspend_disabled)
+        if (dis_before_suspend_disabled) {
+            dis_dev_get();
             bbswitch_off();
+            dis_dev_put();
+        }
         break;
     case PM_RESTORE_PREPARE:
         // deliberately don't do anything as it does not occur before suspend
@@ -390,6 +413,8 @@ static int __init bbswitch_init(void) {
         return -ENOMEM;
     }
 
+    dis_dev_get();
+
     if (load_state == CARD_ON)
         bbswitch_on();
     else if (load_state == CARD_OFF)
@@ -397,6 +422,8 @@ static int __init bbswitch_init(void) {
 
     pr_info("Succesfully loaded. Discrete card %s is %s\n",
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
+
+    dis_dev_put();
 
     nb.notifier_call = &bbswitch_pm_handler;
     register_pm_notifier(&nb);
@@ -407,6 +434,8 @@ static int __init bbswitch_init(void) {
 static void __exit bbswitch_exit(void) {
     remove_proc_entry("bbswitch", acpi_root_dir);
 
+    dis_dev_get();
+
     if (unload_state == CARD_ON)
         bbswitch_on();
     else if (unload_state == CARD_OFF)
@@ -414,6 +443,8 @@ static void __exit bbswitch_exit(void) {
 
     pr_info("Unloaded. Discrete card %s is %s\n",
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
+
+    dis_dev_put();
 
     if (nb.notifier_call)
         unregister_pm_notifier(&nb);
