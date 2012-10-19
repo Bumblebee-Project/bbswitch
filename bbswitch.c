@@ -9,6 +9,8 @@
  * Get status
  * # cat /proc/acpi/bbswitch
  */
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/pci.h>
 #include <linux/acpi.h>
 #include <linux/module.h>
@@ -114,8 +116,7 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
         char muid_str[5 * 16];
         char args_str[5 * 4];
 
-        printk(KERN_WARNING "bbswitch: failed to evaluate _DSM {%s} 0x%X 0x%X"
-            " {%s}: %s\n",
+        pr_warn("failed to evaluate _DSM {%s} 0x%X 0x%X {%s}: %s\n",
             buffer_to_string(muid, 16, muid_str), revid, func,
             buffer_to_string(args,  4, args_str), acpi_format_exception(err));
         return err;
@@ -134,8 +135,8 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
             *result |= (obj->buffer.pointer[3] << 24);
         }
     } else {
-        printk(KERN_WARNING "bbswitch: _DSM call yields an unsupported result"
-            " type: %X\n", obj->type);
+        pr_warn("_DSM call yields an unsupported result type: %#x\n",
+            obj->type);
     }
 
     kfree(output.pointer);
@@ -165,8 +166,7 @@ static int bbswitch_optimus_dsm(void) {
             // failure
             return 1;
         }
-        printk(KERN_DEBUG "bbswitch: Result of Optimus _DSM call: %08X\n",
-            result);
+        pr_debug("Result of Optimus _DSM call: %08X\n", result);
     }
     return 0;
 }
@@ -181,8 +181,7 @@ static int bbswitch_acpi_off(void) {
             // failure
             return 1;
         }
-        printk(KERN_DEBUG "bbswitch: Result of _DSM call for OFF: %08X\n",
-            result);
+        pr_debug("Result of _DSM call for OFF: %08X\n", result);
     }
     return 0;
 }
@@ -197,8 +196,7 @@ static int bbswitch_acpi_on(void) {
             // failure
             return 1;
         }
-        printk(KERN_DEBUG "bbswitch: Result of _DSM call for ON: %08X\n",
-            result);
+        pr_debug("Result of _DSM call for ON: %08X\n", result);
     }
     return 0;
 }
@@ -221,16 +219,15 @@ static void bbswitch_off(void) {
     // to prevent the system from possibly locking up, don't disable the device
     // if it's still in use by a driver (i.e. nouveau or nvidia)
     if (dis_dev->driver) {
-        printk(KERN_WARNING "bbswitch: device %s is in use by driver '%s', "
-            "refusing OFF\n", dev_name(&dis_dev->dev), dis_dev->driver->name);
+        pr_warn("device %s is in use by driver '%s', refusing OFF\n",
+            dev_name(&dis_dev->dev), dis_dev->driver->name);
         return;
     }
 
-    printk(KERN_INFO "bbswitch: disabling discrete graphics\n");
+    pr_info("disabling discrete graphics\n");
 
     if (bbswitch_optimus_dsm()) {
-        printk(KERN_WARNING "bbswitch: Optimus ACPI call failed, the device is"
-            " not disabled\n");
+        pr_warn("Optimus ACPI call failed, the device is not disabled\n");
         return;
     }
 
@@ -240,25 +237,22 @@ static void bbswitch_off(void) {
     pci_set_power_state(dis_dev, PCI_D3cold);
 
     if (bbswitch_acpi_off())
-        printk(KERN_WARNING "bbswitch: The discrete card could not be disabled"
-                " by a _DSM call\n");
+        pr_warn("The discrete card could not be disabled by a _DSM call\n");
 }
 
 static void bbswitch_on(void) {
     if (!is_card_disabled())
         return;
 
-    printk(KERN_INFO "bbswitch: enabling discrete graphics\n");
+    pr_info("enabling discrete graphics\n");
 
     if (bbswitch_acpi_on())
-        printk(KERN_WARNING "bbswitch: The discrete card could not be enabled"
-            " by a _DSM call\n");
+        pr_warn("The discrete card could not be enabled by a _DSM call\n");
 
     pci_set_power_state(dis_dev, PCI_D0);
     pci_restore_state(dis_dev);
     if (pci_enable_device(dis_dev))
-        printk(KERN_WARNING "bbswitch: failed to enable %s\n",
-            dev_name(&dis_dev->dev));
+        pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
     pci_set_master(dis_dev);
 }
 
@@ -332,7 +326,7 @@ static int __init bbswitch_init(void) {
     struct pci_dev *pdev = NULL;
     acpi_handle igd_handle = NULL;
 
-    printk(KERN_INFO "bbswitch: version %s\n", BBSWITCH_VERSION);
+    pr_info("version %s\n", BBSWITCH_VERSION);
 
     while ((pdev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pdev)) != NULL) {
         struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
@@ -345,8 +339,8 @@ static int __init bbswitch_init(void) {
 
         handle = DEVICE_ACPI_HANDLE(&pdev->dev);
         if (!handle) {
-            printk(KERN_WARNING "bbswitch: cannot find ACPI handle for VGA"
-                " device %s\n", dev_name(&pdev->dev));
+            pr_warn("cannot find ACPI handle for VGA device %s\n",
+                dev_name(&pdev->dev));
             continue;
         }
 
@@ -354,45 +348,45 @@ static int __init bbswitch_init(void) {
 
         if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
             igd_handle = handle;
-            printk(KERN_INFO "bbswitch: Found integrated VGA device %s: %s\n",
+            pr_info("Found integrated VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
         } else {
             dis_dev = pdev;
             dis_handle = handle;
-            printk(KERN_INFO "bbswitch: Found discrete VGA device %s: %s\n",
+            pr_info("Found discrete VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
         }
         kfree(buf.pointer);
     }
 
     if (dis_dev == NULL) {
-        printk(KERN_ERR "bbswitch: No discrete VGA device found\n");
+        pr_err("No discrete VGA device found\n");
         return -ENODEV;
     }
 
     if (has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
         dsm_type = DSM_TYPE_OPTIMUS;
-        printk(KERN_INFO "bbswitch: detected an Optimus _DSM function\n");
+        pr_info("detected an Optimus _DSM function\n");
     } else if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
         dsm_type = DSM_TYPE_NVIDIA;
-        printk(KERN_INFO "bbswitch: detected a nVidia _DSM function\n");
+        pr_info("detected a nVidia _DSM function\n");
     } else {
        /* At least two Acer machines are known to use the intel ACPI handle
         * with the legacy nvidia DSM */
         dis_handle = igd_handle;
         if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
             dsm_type = DSM_TYPE_NVIDIA;
-            printk(KERN_INFO "bbswitch: detected a nVidia _DSM function on the"
+            pr_info("detected a nVidia _DSM function on the"
                 " integrated video card\n");
         } else {
-            printk(KERN_ERR "bbswitch: No suitable _DSM call found.\n");
+            pr_err("No suitable _DSM call found.\n");
             return -ENODEV;
         }
     }
 
     acpi_entry = proc_create("bbswitch", 0664, acpi_root_dir, &bbswitch_fops);
     if (acpi_entry == NULL) {
-        printk(KERN_ERR "bbswitch: Couldn't create proc entry\n");
+        pr_err("Couldn't create proc entry\n");
         return -ENOMEM;
     }
 
@@ -401,7 +395,7 @@ static int __init bbswitch_init(void) {
     else if (load_state == CARD_OFF)
         bbswitch_off();
 
-    printk(KERN_INFO "bbswitch: Succesfully loaded. Discrete card %s is %s\n",
+    pr_info("Succesfully loaded. Discrete card %s is %s\n",
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
 
     nb.notifier_call = &bbswitch_pm_handler;
@@ -418,7 +412,7 @@ static void __exit bbswitch_exit(void) {
     else if (unload_state == CARD_OFF)
         bbswitch_off();
 
-    printk(KERN_INFO "bbswitch: Unloaded. Discrete card %s is %s\n",
+    pr_info("Unloaded. Discrete card %s is %s\n",
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
 
     if (nb.notifier_call)

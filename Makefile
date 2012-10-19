@@ -5,6 +5,10 @@ KVERSION := $(shell uname -r)
 KDIR := /lib/modules/$(KVERSION)/build
 PWD := "$$(pwd)"
 
+ifdef DEBUG
+CFLAGS_$(obj-m) := -DDEBUG
+endif
+
 default:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
