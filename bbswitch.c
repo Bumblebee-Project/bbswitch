@@ -452,3 +452,5 @@ static void __exit bbswitch_exit(void) {
 
 module_init(bbswitch_init);
 module_exit(bbswitch_exit);
+
+/* vim: set sw=4 ts=4 et: */
