@@ -1,4 +1,9 @@
+Version 0.5 - 22 October 2012
+
 * Improved compatibility with older DKMS versions.
+* Set device state to D3cold instead of D3hot.
+* Only print DSM method call results when debugging is enabled.
+* Fixed runtime power management regression in Linux 3.6.
 
 Version 0.4.2 - 26 April 2012
 

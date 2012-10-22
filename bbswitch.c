@@ -19,7 +19,7 @@
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
 
-#define BBSWITCH_VERSION "0.4.2"
+#define BBSWITCH_VERSION "0.5"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
