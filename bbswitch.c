@@ -72,7 +72,7 @@ static acpi_handle dis_handle;
 /* used for keeping the PM event handler */
 static struct notifier_block nb;
 /* whether the card was off before suspend or not; on: 0, off: 1 */
-int dis_before_suspend_disabled;
+static int dis_before_suspend_disabled;
 
 static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
