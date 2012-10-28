@@ -3,6 +3,8 @@
  * https://bugzilla.kernel.org/show_bug.cgi?id=42696
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/acpi.h>
@@ -59,28 +61,28 @@ static int __init hack_apply(void) {
 	acpi_handle tmp_handle, new_handle;
 	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
 	if (!need_acpi_handle_hack()) {
-		printk(KERN_ERR "Machine does not need ACPI handle hack\n");
+		pr_err("Machine does not need ACPI handle hack\n");
 		return -ENODEV;
 	}
 	dis_dev = get_discrete_device();
 	if (!dis_dev) {
-		printk(KERN_ERR "No discrete video card found\n");
+		pr_err("No discrete video card found\n");
 		return -ENODEV;
 	}
 	orig_handle = DEVICE_ACPI_HANDLE(&dis_dev->dev);
 	if (!orig_handle) {
-		printk(KERN_ERR "No ACPI handle found for discrete\n");
+		pr_err("No ACPI handle found for discrete video card\n");
 		return -ENODEV;
 	}
 	acpi_get_name(orig_handle, ACPI_SINGLE_NAME, &buf);
 	if (strcmp((char *)buf.pointer, "PEGP") == 0) {
-		printk(KERN_ERR "Handle has already be changed\n");
+		pr_err("Handle has already been changed to PEGP\n");
 		return -ENODEV;
 	}
 	/* \_SB.PCI0.PEG0.VGA_ -> \_SB.PCI0.PEG0.PEGP */
 	acpi_get_parent(orig_handle, &tmp_handle);
 	acpi_get_handle(tmp_handle, "PEGP", &new_handle);
-	printk(KERN_INFO "Setting new ACPI handle for discrete video card\n");
+	pr_info("Setting new ACPI handle for discrete video card\n");
 	dev_set_acpi_handle(dis_dev, new_handle);
 	pci_dev_put(dis_dev);
 	return 0;
@@ -88,7 +90,7 @@ static int __init hack_apply(void) {
 
 static void __exit hack_undo(void) {
 	if (orig_handle) {
-		printk(KERN_INFO "Restoring original ACPI handle for discrete"
+		pr_info("Restoring original ACPI handle for discrete"
 			" video card\n");
 		dev_set_acpi_handle(dis_dev, orig_handle);
 	}
