@@ -13,7 +13,7 @@
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Dirty ACPI handle hack for Lenovo IdeaPad Y[45]70");
 MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
-MODULE_VERSION("0.0.1");
+MODULE_VERSION("0.0.2");
 
 static struct pci_dev *dis_dev;
 static acpi_handle orig_handle;
