@@ -72,20 +72,35 @@ static int __init hack_apply(void) {
 	orig_handle = DEVICE_ACPI_HANDLE(&dis_dev->dev);
 	if (!orig_handle) {
 		pr_err("No ACPI handle found for discrete video card\n");
-		return -ENODEV;
+		goto free_dev;
 	}
-	acpi_get_name(orig_handle, ACPI_SINGLE_NAME, &buf);
+	if (ACPI_FAILURE(acpi_get_name(orig_handle, ACPI_SINGLE_NAME, &buf))) {
+		pr_err("Could not acquire name for discrete video card\n");
+		goto free_dev;
+	}
 	if (strcmp((char *)buf.pointer, "PEGP") == 0) {
 		pr_err("Handle has already been changed to PEGP\n");
-		return -ENODEV;
+		goto free_name;
 	}
 	/* \_SB.PCI0.PEG0.VGA_ -> \_SB.PCI0.PEG0.PEGP */
-	acpi_get_parent(orig_handle, &tmp_handle);
-	acpi_get_handle(tmp_handle, "PEGP", &new_handle);
+	if (ACPI_FAILURE(acpi_get_parent(orig_handle, &tmp_handle))) {
+		pr_err("No parent device found for %s\n", (char *)buf.pointer);
+		goto free_name;
+	}
+	if (ACPI_FAILURE(acpi_get_handle(tmp_handle, "PEGP", &new_handle))) {
+		pr_err("No PEGP handle found on %s\n", (char *)buf.pointer);
+		goto free_name;
+	}
 	pr_info("Setting new ACPI handle for discrete video card\n");
 	dev_set_acpi_handle(dis_dev, new_handle);
+	kfree(buf.pointer);
 	pci_dev_put(dis_dev);
 	return 0;
+free_name:
+	kfree(buf.pointer);
+free_dev:
+	pci_dev_put(dis_dev);
+	return -ENODEV;
 }
 
 static void __exit hack_undo(void) {
