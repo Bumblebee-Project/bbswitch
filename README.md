@@ -66,12 +66,10 @@ To make use of it, use the `hack-lenovo` branch. An example using DKMS:
 
     $ git clone git://github.com/Bumblebee-Project/bbswitch.git -b hack-lenovo
     $ cd bbswitch
-    $ mkdir /usr/src/acpi-handle-hack-0.0.1
-    # cp Makefile acpi-handle-hack.c /usr/src/acpi-handle-hack-0.0.1
-    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.1/dkms.conf
-    # dkms add acpi-handle-hack/0.0.1
-    # dkms build acpi-handle-hack/0.0.1
-    # dkms install acpi-handle-hack/0.0.1
+    $ mkdir /usr/src/acpi-handle-hack-0.0.2
+    # cp Makefile acpi-handle-hack.c /usr/src/acpi-handle-hack-0.0.2
+    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.2/dkms.conf
+    # dkms install -m acpi-handle-hack -v 0.0.2
 If everything goes well, you now need to get the hack loaded on boot. On
 Ubuntu and Debian, this can be done with:
 
