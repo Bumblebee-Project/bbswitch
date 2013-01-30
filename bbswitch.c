@@ -238,6 +238,20 @@ static void bbswitch_off(void) {
     pci_save_state(dis_dev);
     pci_clear_master(dis_dev);
     pci_disable_device(dis_dev);
+    do {
+        struct acpi_device *ad = NULL;
+        int r;
+
+        r = acpi_bus_get_device(dis_handle, &ad);
+        if (r || !ad) {
+            pr_warn("Cannot get ACPI device for PCI device\n");
+            break;
+        }
+        if (ad->power.state == ACPI_STATE_UNKNOWN) {
+            pr_debug("ACPI power state is unknown, forcing D0\n");
+            ad->power.state = ACPI_STATE_D0;
+        }
+    } while (0);
     pci_set_power_state(dis_dev, PCI_D3cold);
 
     if (bbswitch_acpi_off())
