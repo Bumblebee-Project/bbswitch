@@ -38,6 +38,9 @@ module_param(load_state, int, 0400);
 static int unload_state = CARD_UNCHANGED;
 MODULE_PARM_DESC(unload_state, "Card state on unload (0 = off, 1 = on, -1 = unchanged)");
 module_param(unload_state, int, 0600);
+static bool skip_optimus_dsm = false;
+MODULE_PARM_DESC(skip_optimus_dsm, "Skip probe of Optimus discrete DSM (default = false)");
+module_param(skip_optimus_dsm, bool, 0400);
 
 extern struct proc_dir_entry *acpi_root_dir;
 
@@ -387,7 +390,8 @@ static int __init bbswitch_init(void) {
         return -ENODEV;
     }
 
-    if (has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
+    if (!skip_optimus_dsm &&
+            has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
         dsm_type = DSM_TYPE_OPTIMUS;
         pr_info("detected an Optimus _DSM function\n");
     } else if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
