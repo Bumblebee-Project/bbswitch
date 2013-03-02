@@ -72,8 +72,6 @@ static int dsm_type = DSM_TYPE_UNSUPPORTED;
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
 
-/* used for keeping the PM event handler */
-static struct notifier_block nb;
 /* whether the card was off before suspend or not; on: 0, off: 1 */
 static int dis_before_suspend_disabled;
 
@@ -361,6 +359,10 @@ static struct file_operations bbswitch_fops = {
     .release= single_release
 };
 
+static struct notifier_block nb = {
+    .notifier_call = &bbswitch_pm_handler
+};
+
 static int __init bbswitch_init(void) {
     struct proc_dir_entry *acpi_entry;
     struct pci_dev *pdev = NULL;
@@ -443,7 +445,6 @@ static int __init bbswitch_init(void) {
 
     dis_dev_put();
 
-    nb.notifier_call = &bbswitch_pm_handler;
     register_pm_notifier(&nb);
 
     return 0;
