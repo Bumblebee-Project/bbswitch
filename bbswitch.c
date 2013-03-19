@@ -33,7 +33,7 @@
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
 
-#define BBSWITCH_VERSION "0.5"
+#define BBSWITCH_VERSION "0.6"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");

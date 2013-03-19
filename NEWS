@@ -1,3 +1,13 @@
+Version 0.6 - 19 March 2013
+
+* Add workaround for Linux 3.8 regression (not present in earlier or latter
+  versions) that prevented the video card from turned off unless a driver was
+  loaded before.
+* Compatibility with grsec patches.
+* Add 'skip_optimus_dsm' module option so users of Lenovo T410s can use bbswitch
+  by setting this option to true.
+* Clarify license (GPLv3).
+
 Version 0.5 - 22 October 2012
 
 * Improved compatibility with older DKMS versions.
