@@ -94,6 +94,9 @@ same behavior as:
 If not explictly set, the default behavior is not to change the power state of
 the discrete video card which equals to `load_state=-1 unload_state=-1`.
 
+The Lenovo T410s laptop needs the module option `skip_optimus_dsm=1`, otherwise
+it will detect the wrong methods which result in the card not being disabled.
+
 ### Disable card on boot
 
 These options can be useful to disable the card on boot time. Depending on your
