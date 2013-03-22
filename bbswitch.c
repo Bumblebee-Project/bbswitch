@@ -10,6 +10,9 @@
  * # cat /proc/acpi/bbswitch
  */
 /*
+ *  Copyright (C) 2011-2013 Bumblebee Project
+ *  Author: Peter Wu <lekensteyn@gmail.com>
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -37,7 +40,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
-MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
+MODULE_AUTHOR("Peter Wu <lekensteyn@gmail.com>");
 MODULE_VERSION(BBSWITCH_VERSION);
 
 enum {
