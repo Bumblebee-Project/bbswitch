@@ -51,8 +51,13 @@ To uninstall it, run:
 
 Lenovo IdeaPad Y470/Y570 and Toshiba SATELLITE P870
 ---------------------------------------------------
-Until [this kernel bug](https://bugzilla.kernel.org/show_bug.cgi?id=42696) is
-fixed, you need to apply an ugly hack on these laptops to make bbswitch and the
+[This kernel bug](https://bugzilla.kernel.org/show_bug.cgi?id=42696) is fixed in
+Linux 3.9-rc1 and Linux 3.8.5 which obsoletes this hack. Linux 3.7 is
+incompatible with this hack (and already EOL'd, so a backport fix won't be made
+available).
+
+In kernel version 3.6 and older, you need to apply an ugly hack on these laptops
+to make bbswitch and the
 driver (both nouveau and nvidia) work. For now I have decided not to put the
 hack in the bbswitch module since it is a very ugly hack that is comparable to
 writing a maximum allowable speed of 130 km/h on a traffic sign for a road
