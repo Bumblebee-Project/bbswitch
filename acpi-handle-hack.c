@@ -33,6 +33,7 @@ static bool __init need_acpi_handle_hack(void) {
 		|| dmi_match(DMI_PRODUCT_VERSION, "PSPLFE-00E009FR") /* TOSHIBA Satellite P870 */
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo G580")
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo G780")
+		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Z500")
 		|| (dmi_match(DMI_SYS_VENDOR, "LENOVO") && dmi_match(DMI_PRODUCT_NAME, "PIQY0")) /* Lenovo IdeaPad Y570 */
 		;
 }
