@@ -434,7 +434,7 @@ static int __init bbswitch_init(void) {
        /* At least two Acer machines are known to use the intel ACPI handle
         * with the legacy nvidia DSM */
         dis_handle = igd_handle;
-        if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
+        if (dis_handle && has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
             dsm_type = DSM_TYPE_NVIDIA;
             pr_info("detected a nVidia _DSM function on the"
                 " integrated video card\n");
