@@ -132,10 +132,14 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
 
     err = acpi_evaluate_object(handle, "_DSM", &input, &output);
     if (err) {
+        struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
         char muid_str[5 * 16];
         char args_str[5 * 4];
 
-        pr_warn("failed to evaluate _DSM {%s} 0x%X 0x%X {%s}: %s\n",
+        acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
+
+        pr_warn("failed to evaluate %s._DSM {%s} 0x%X 0x%X {%s}: %s\n",
+            (char *)buf.pointer,
             buffer_to_string(muid, 16, muid_str), revid, func,
             buffer_to_string(args,  4, args_str), acpi_format_exception(err));
         return err;
