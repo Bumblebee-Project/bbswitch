@@ -9,6 +9,7 @@
 #include <linux/pci.h>
 #include <linux/acpi.h>
 #include <linux/dmi.h>
+#include <linux/version.h>
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Dirty ACPI handle hack for Lenovo IdeaPad Y[45]70");
@@ -23,7 +24,7 @@ static acpi_handle orig_handle;
  */
 static bool __init need_acpi_handle_hack(void) {
 	return dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y470             ")
-		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y480")	
+		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y480")
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y570             ")
 		|| dmi_match(DMI_PRODUCT_VERSION, "LENOVO IDEAPAD Y570 ") /* sys-product-name: PIQY0 */
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y580")
@@ -58,7 +59,13 @@ static struct pci_dev __init *get_discrete_device(void) {
  * Very ugly hack to set the ACPI handle, do not use this as exemplary code!
  */
 static void dev_set_acpi_handle(struct pci_dev *pdev, acpi_handle handle) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+	pdev->dev.acpi_node.handle = handle;
+#elif LINUX_VERSION_CODE > KERNEL_VERSION(2,6,19)
 	pdev->dev.archdata.acpi_handle = handle;
+#else
+	pdev->dev.firmware_data = handle;
+#endif
 }
 
 static int __init hack_apply(void) {
