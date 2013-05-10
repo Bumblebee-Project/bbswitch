@@ -456,6 +456,12 @@ static int __init bbswitch_init(void) {
 
     dis_dev_get();
 
+    if (!is_card_disabled()) {
+        /* We think the card is enabled, so ensure the kernel does as well */
+        if (pci_enable_device(dis_dev))
+            pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
+    }
+
     if (load_state == CARD_ON)
         bbswitch_on();
     else if (load_state == CARD_OFF)
