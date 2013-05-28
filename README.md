@@ -104,8 +104,9 @@ same behavior as:
 If not explictly set, the default behavior is not to change the power state of
 the discrete video card which equals to `load_state=-1 unload_state=-1`.
 
-The Lenovo T410s laptop needs the module option `skip_optimus_dsm=1`, otherwise
-it will detect the wrong methods which result in the card not being disabled.
+The Lenovo T410 and Lenovo T410s laptops need the module option
+`skip_optimus_dsm=1`, otherwise it will detect the wrong methods which result in
+the card not being disabled.
 
 ### Disable card on boot
 
@@ -115,6 +116,11 @@ to load modules on boot time. Adding the below line to the file makes the card
 get disabled on boot:
 
     bbswitch load_state=0
+
+Users of `kmod` should create `/etc/modprobe.d/bbswitch.conf` containing
+`options bbswitch load_state=0` to set the default options. To load the module,
+systemd users should create `/etc/modules-load.d/bbswitch.conf` containing
+`bbswitch`.
 
 You have to update your initial ramdisk (initrd) for the changes propagate to
 the boot process. On Debian and Ubuntu, this can performed by running
