@@ -1,3 +1,9 @@
+Version 0.7 - 28 May 2013
+
+* Fixes a scary WARNING on Linux 3.9.
+* Improved debug information when an ACPI method cannot be executed.
+* Added copyright information, update my name.
+
 Version 0.6 - 19 March 2013
 
 * Add workaround for Linux 3.8 regression (not present in earlier or latter
