@@ -35,6 +35,7 @@ static bool __init need_acpi_handle_hack(void) {
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo G780")
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Z500")
 		|| (dmi_match(DMI_SYS_VENDOR, "LENOVO") && dmi_match(DMI_PRODUCT_NAME, "PIQY0")) /* Lenovo IdeaPad Y570 */
+		|| dmi_match(DMI_PRODUCT_VERSION, "1.70.POST") /* COMPAL QAT10 and DNS (0161264) */
 		;
 }
 
