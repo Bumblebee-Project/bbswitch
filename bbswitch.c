@@ -120,6 +120,9 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
     params[1].integer.value = revid;
     params[2].type = ACPI_TYPE_INTEGER;
     params[2].integer.value = func;
+    /* Although the ACPI spec defines Arg3 as a Package, in practise
+     * implementations expect a Buffer (CreateWordField and Index functions are
+     * applied to it). */
     params[3].type = ACPI_TYPE_BUFFER;
     params[3].buffer.length = 4;
     if (args) {
