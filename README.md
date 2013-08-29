@@ -130,12 +130,13 @@ the boot process. On Debian and Ubuntu, this can performed by running
 
 Some machines do not like the card being disabled at shutdown.  
 Add the next initscript (`/etc/init/bbswitch.conf`) :
-     description "Save power by disabling nvidia on Optimus"
-     author      "Lekensteyn <lekensteyn@gmail.com>"
-     start on    runlevel [2345]
-     stop on     runlevel [016]
-     pre-start   exec /sbin/modprobe bbswitch load_state=0 unload_state=1
-     pre-stop    exec /sbin/rmmod bbswitch 
+
+    description "Save power by disabling nvidia on Optimus"
+    author      "Lekensteyn <lekensteyn@gmail.com>"
+    start on    runlevel [2345]
+    stop on     runlevel [016]
+    pre-start   exec /sbin/modprobe bbswitch load_state=0 unload_state=1
+    pre-stop    exec /sbin/rmmod bbswitch 
 
 Reporting bugs
 --------------
