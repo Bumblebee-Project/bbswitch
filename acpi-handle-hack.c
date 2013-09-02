@@ -60,7 +60,12 @@ static struct pci_dev __init *get_discrete_device(void) {
  * Very ugly hack to set the ACPI handle, do not use this as exemplary code!
  */
 static void dev_set_acpi_handle(struct pci_dev *pdev, acpi_handle handle) {
+#ifdef ACPI_HANDLE_SET
+	ACPI_HANDLE_SET(&pdev->dev, handle);
+#else
+	/* for Linux 3.7 and earlier */
 	pdev->dev.archdata.acpi_handle = handle;
+#endif
 }
 
 static int __init hack_apply(void) {
