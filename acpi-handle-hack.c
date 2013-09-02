@@ -37,6 +37,7 @@ static bool __init need_acpi_handle_hack(void) {
 		|| dmi_match(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Z500")
 		|| (dmi_match(DMI_SYS_VENDOR, "LENOVO") && dmi_match(DMI_PRODUCT_NAME, "PIQY0")) /* Lenovo IdeaPad Y570 */
 		|| dmi_match(DMI_PRODUCT_NAME, "Aspire V5-573G")
+		|| dmi_match(DMI_PRODUCT_NAME, "Aspire V5-573PG")
 		;
 }
 
