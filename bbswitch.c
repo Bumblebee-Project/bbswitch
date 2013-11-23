@@ -400,7 +400,12 @@ static int __init bbswitch_init(void) {
             pci_class != PCI_CLASS_DISPLAY_3D)
             continue;
 
+#ifdef ACPI_HANDLE
+	/* for linux-3.8 and later */
+        handle = ACPI_HANDLE(&pdev->dev);
+#else
         handle = DEVICE_ACPI_HANDLE(&pdev->dev);
+#endif
         if (!handle) {
             pr_warn("cannot find ACPI handle for VGA device %s\n",
                 dev_name(&pdev->dev));
