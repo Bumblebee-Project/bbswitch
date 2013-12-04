@@ -81,7 +81,14 @@ static int __init hack_apply(void) {
 		pr_err("No discrete video card found\n");
 		return -ENODEV;
 	}
+
+#ifdef ACPI_HANDLE
+	/* since Linux 3.8 */
+	orig_handle = ACPI_HANDLE(&dis_dev->dev);
+#else
+	/* removed since Linux 3.13 */
 	orig_handle = DEVICE_ACPI_HANDLE(&dis_dev->dev);
+#endif
 	if (!orig_handle) {
 		pr_err("No ACPI handle found for discrete video card\n");
 		goto free_dev;
