@@ -1,3 +1,7 @@
+Version 0.8 - 5 December 2013
+
+* Compatibility with Linux 3.13.
+
 Version 0.7 - 28 May 2013
 
 * Fixes a scary WARNING on Linux 3.9.
