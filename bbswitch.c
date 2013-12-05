@@ -9,6 +9,23 @@
  * Get status
  * # cat /proc/acpi/bbswitch
  */
+/*
+ *  Copyright (C) 2011-2013 Bumblebee Project
+ *  Author: Peter Wu <lekensteyn@gmail.com>
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/pci.h>
@@ -19,11 +36,11 @@
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
 
-#define BBSWITCH_VERSION "0.5"
+#define BBSWITCH_VERSION "0.8"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Toggle the discrete graphics card");
-MODULE_AUTHOR("Peter Lekensteyn <lekensteyn@gmail.com>");
+MODULE_AUTHOR("Peter Wu <lekensteyn@gmail.com>");
 MODULE_VERSION(BBSWITCH_VERSION);
 
 enum {
@@ -38,6 +55,9 @@ module_param(load_state, int, 0400);
 static int unload_state = CARD_UNCHANGED;
 MODULE_PARM_DESC(unload_state, "Card state on unload (0 = off, 1 = on, -1 = unchanged)");
 module_param(unload_state, int, 0600);
+static bool skip_optimus_dsm = false;
+MODULE_PARM_DESC(skip_optimus_dsm, "Skip probe of Optimus discrete DSM (default = false)");
+module_param(skip_optimus_dsm, bool, 0400);
 
 extern struct proc_dir_entry *acpi_root_dir;
 
@@ -69,8 +89,6 @@ static int dsm_type = DSM_TYPE_UNSUPPORTED;
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
 
-/* used for keeping the PM event handler */
-static struct notifier_block nb;
 /* whether the card was off before suspend or not; on: 0, off: 1 */
 static int dis_before_suspend_disabled;
 
@@ -102,6 +120,9 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
     params[1].integer.value = revid;
     params[2].type = ACPI_TYPE_INTEGER;
     params[2].integer.value = func;
+    /* Although the ACPI spec defines Arg3 as a Package, in practise
+     * implementations expect a Buffer (CreateWordField and Index functions are
+     * applied to it). */
     params[3].type = ACPI_TYPE_BUFFER;
     params[3].buffer.length = 4;
     if (args) {
@@ -114,10 +135,14 @@ static int acpi_call_dsm(acpi_handle handle, const char muid[16], int revid,
 
     err = acpi_evaluate_object(handle, "_DSM", &input, &output);
     if (err) {
+        struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
         char muid_str[5 * 16];
         char args_str[5 * 4];
 
-        pr_warn("failed to evaluate _DSM {%s} 0x%X 0x%X {%s}: %s\n",
+        acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
+
+        pr_warn("failed to evaluate %s._DSM {%s} 0x%X 0x%X {%s}: %s\n",
+            (char *)buf.pointer,
             buffer_to_string(muid, 16, muid_str), revid, func,
             buffer_to_string(args,  4, args_str), acpi_format_exception(err));
         return err;
@@ -235,6 +260,20 @@ static void bbswitch_off(void) {
     pci_save_state(dis_dev);
     pci_clear_master(dis_dev);
     pci_disable_device(dis_dev);
+    do {
+        struct acpi_device *ad = NULL;
+        int r;
+
+        r = acpi_bus_get_device(dis_handle, &ad);
+        if (r || !ad) {
+            pr_warn("Cannot get ACPI device for PCI device\n");
+            break;
+        }
+        if (ad->power.state == ACPI_STATE_UNKNOWN) {
+            pr_debug("ACPI power state is unknown, forcing D0\n");
+            ad->power.state = ACPI_STATE_D0;
+        }
+    } while (0);
     pci_set_power_state(dis_dev, PCI_D3cold);
 
     if (bbswitch_acpi_off())
@@ -344,6 +383,10 @@ static struct file_operations bbswitch_fops = {
     .release= single_release
 };
 
+static struct notifier_block nb = {
+    .notifier_call = &bbswitch_pm_handler
+};
+
 static int __init bbswitch_init(void) {
     struct proc_dir_entry *acpi_entry;
     struct pci_dev *pdev = NULL;
@@ -360,7 +403,13 @@ static int __init bbswitch_init(void) {
             pci_class != PCI_CLASS_DISPLAY_3D)
             continue;
 
+#ifdef ACPI_HANDLE
+        /* since Linux 3.8 */
+        handle = ACPI_HANDLE(&pdev->dev);
+#else
+        /* removed since Linux 3.13 */
         handle = DEVICE_ACPI_HANDLE(&pdev->dev);
+#endif
         if (!handle) {
             pr_warn("cannot find ACPI handle for VGA device %s\n",
                 dev_name(&pdev->dev));
@@ -387,7 +436,8 @@ static int __init bbswitch_init(void) {
         return -ENODEV;
     }
 
-    if (has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
+    if (!skip_optimus_dsm &&
+            has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
         dsm_type = DSM_TYPE_OPTIMUS;
         pr_info("detected an Optimus _DSM function\n");
     } else if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
@@ -397,7 +447,7 @@ static int __init bbswitch_init(void) {
        /* At least two Acer machines are known to use the intel ACPI handle
         * with the legacy nvidia DSM */
         dis_handle = igd_handle;
-        if (has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
+        if (dis_handle && has_dsm_func(acpi_nvidia_dsm_muid, 0x102, 0x3)) {
             dsm_type = DSM_TYPE_NVIDIA;
             pr_info("detected a nVidia _DSM function on the"
                 " integrated video card\n");
@@ -415,6 +465,12 @@ static int __init bbswitch_init(void) {
 
     dis_dev_get();
 
+    if (!is_card_disabled()) {
+        /* We think the card is enabled, so ensure the kernel does as well */
+        if (pci_enable_device(dis_dev))
+            pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
+    }
+
     if (load_state == CARD_ON)
         bbswitch_on();
     else if (load_state == CARD_OFF)
@@ -425,7 +481,6 @@ static int __init bbswitch_init(void) {
 
     dis_dev_put();
 
-    nb.notifier_call = &bbswitch_pm_handler;
     register_pm_notifier(&nb);
 
     return 0;

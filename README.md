@@ -22,6 +22,16 @@ detect the correct handle preceding _DSM and has some built-in safeguards:
   disabled again if that was the case before suspending. Hibernation should
   work, but it not tested.
 
+Precautionary measure : 
+- On some machines, turning off the card is permanent and the card does not
+  reappear on subsequents reboots, which can result into the screen staying
+  black all the time, including the BIOS screen.
+  If it occurs, first try to shutdown, unplug power cord, remove battery, wait
+  30s, then put everything back in and boot. If it's not solved, then the
+  solution is to reset the BIOS to factory settings. Before executing bbswitch
+  for the first time, it is therefore recommended to take note of the full key
+  sequence in the BIOS to do a reset. 
+
 Build
 -----
 
@@ -133,6 +143,10 @@ same behavior as:
 If not explictly set, the default behavior is not to change the power state of
 the discrete video card which equals to `load_state=-1 unload_state=-1`.
 
+The Lenovo T410 and Lenovo T410s laptops need the module option
+`skip_optimus_dsm=1`, otherwise it will detect the wrong methods which result in
+the card not being disabled.
+
 ### Disable card on boot
 
 These options can be useful to disable the card on boot time. Depending on your
@@ -142,9 +156,26 @@ get disabled on boot:
 
     bbswitch load_state=0
 
+Users of `kmod` should create `/etc/modprobe.d/bbswitch.conf` containing
+`options bbswitch load_state=0` to set the default options. To load the module,
+systemd users should create `/etc/modules-load.d/bbswitch.conf` containing
+`bbswitch`.
+
 You have to update your initial ramdisk (initrd) for the changes propagate to
 the boot process. On Debian and Ubuntu, this can performed by running
 `update-initramfs -u` as root.
+
+### Enable card on shutdown
+
+Some machines do not like the card being disabled at shutdown.  
+Add the next initscript (`/etc/init/bbswitch.conf`) :
+
+    description "Save power by disabling nvidia on Optimus"
+    author      "Lekensteyn <lekensteyn@gmail.com>"
+    start on    runlevel [2345]
+    stop on     runlevel [016]
+    pre-start   exec /sbin/modprobe bbswitch load_state=0 unload_state=1
+    pre-stop    exec /sbin/rmmod bbswitch 
 
 Reporting bugs
 --------------
