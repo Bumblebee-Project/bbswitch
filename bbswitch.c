@@ -274,8 +274,10 @@ static int is_card_disabled(void) {
 }
 
 static void bbswitch_off(void) {
-    if (is_card_disabled())
+    if (is_card_disabled()) {
+        pr_info("discrete card already disabled\n");
         return;
+    }
 
     // to prevent the system from possibly locking up, don't disable the device
     // if it's still in use by a driver (i.e. nouveau or nvidia)
@@ -298,22 +300,27 @@ static void bbswitch_off(void) {
     do {
         acpi_get_power_state(dis_handle);
     } while (0);
-    pci_set_power_state(dis_dev, PCI_D3cold);
+    if (pci_set_power_state(dis_dev, PCI_D3cold) != 0)
+        pr_warn("The discrete card could not be put in D3cold state");
 
     if (bbswitch_acpi_off())
         pr_warn("The discrete card could not be disabled by a _DSM call\n");
 }
 
 static void bbswitch_on(void) {
-    if (!is_card_disabled())
+    if (!is_card_disabled()) {
+        pr_info("discrete graphics already enabled\n");
         return;
+    }
 
     pr_info("enabling discrete graphics\n");
 
     if (bbswitch_acpi_on())
         pr_warn("The discrete card could not be enabled by a _DSM call\n");
 
-    pci_set_power_state(dis_dev, PCI_D0);
+    if (pci_set_power_state(dis_dev, PCI_D0))
+        pr_warn("The discrete card could not be set to D0 (awake) state\n");
+
     pci_restore_state(dis_dev);
     if (pci_enable_device(dis_dev))
         pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
