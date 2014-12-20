@@ -58,6 +58,9 @@ module_param(unload_state, int, 0600);
 static bool skip_optimus_dsm = false;
 MODULE_PARM_DESC(skip_optimus_dsm, "Skip probe of Optimus discrete DSM (default = false)");
 module_param(skip_optimus_dsm, bool, 0400);
+static bool use_acpi_to_detect_card_state = false;
+MODULE_PARM_DESC(use_acpi_to_detect_card_state, "Use ACPI to detect the card state (required on recent ThinkPads, default = false)");
+module_param(use_acpi_to_detect_card_state, bool, 0600);
 
 extern struct proc_dir_entry *acpi_root_dir;
 
@@ -227,15 +230,47 @@ static int bbswitch_acpi_on(void) {
     return 0;
 }
 
+static char const* acpi_power_state_to_string(int state) {
+    switch(state) {
+	case ACPI_STATE_D0: return "D0";
+	case ACPI_STATE_D1: return "D1";
+	case ACPI_STATE_D2: return "D2";
+	case ACPI_STATE_D3: return "D3";
+    }
+    return "unknown ACPI power state";
+}
+
+static int acpi_get_power_state(acpi_handle dis_handle) {
+    struct acpi_device *ad = NULL;
+    int r;
+
+    r = acpi_bus_get_device(dis_handle, &ad);
+    if (r || !ad) {
+        pr_warn("Cannot get ACPI device for PCI device\n");
+        return ACPI_STATE_UNKNOWN;
+    }
+    if (ad->power.state == ACPI_STATE_UNKNOWN) {
+        pr_debug("ACPI power state is unknown, forcing D0\n");
+        ad->power.state = ACPI_STATE_D0;
+    }
+    return ad->power.state;
+}
+
 // Returns 1 if the card is disabled, 0 if enabled
 static int is_card_disabled(void) {
-    u32 cfg_word;
-    // read first config word which contains Vendor and Device ID. If all bits
-    // are enabled, the device is assumed to be off
-    pci_read_config_dword(dis_dev, 0, &cfg_word);
-    // if one of the bits is not enabled (the card is enabled), the inverted
-    // result will be non-zero and hence logical not will make it 0 ("false")
-    return !~cfg_word;
+    if (use_acpi_to_detect_card_state) {
+        int state = acpi_get_power_state(dis_handle);
+	pr_info("discrete card is in state %s\n", acpi_power_state_to_string(state));
+	return (state != ACPI_STATE_D0);
+    } else {
+	u32 cfg_word;
+	// read first config word which contains Vendor and Device ID. If all bits
+	// are enabled, the device is assumed to be off
+	pci_read_config_dword(dis_dev, 0, &cfg_word);
+	// if one of the bits is not enabled (the card is enabled), the inverted
+	// result will be non-zero and hence logical not will make it 0 ("false")
+	return !~cfg_word;
+    }
 }
 
 static void bbswitch_off(void) {
@@ -261,18 +296,7 @@ static void bbswitch_off(void) {
     pci_clear_master(dis_dev);
     pci_disable_device(dis_dev);
     do {
-        struct acpi_device *ad = NULL;
-        int r;
-
-        r = acpi_bus_get_device(dis_handle, &ad);
-        if (r || !ad) {
-            pr_warn("Cannot get ACPI device for PCI device\n");
-            break;
-        }
-        if (ad->power.state == ACPI_STATE_UNKNOWN) {
-            pr_debug("ACPI power state is unknown, forcing D0\n");
-            ad->power.state = ACPI_STATE_D0;
-        }
+        acpi_get_power_state(dis_handle);
     } while (0);
     pci_set_power_state(dis_dev, PCI_D3cold);
 
