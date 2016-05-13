@@ -197,6 +197,26 @@ static int bbswitch_optimus_dsm(void) {
     return 0;
 }
 
+// Windows 8/8.1/10 do not use DSM to put the device in D3cold state,
+// instead it disables power resources on the parent PCIe port device.
+static bool has_pr3_support(void) {
+    acpi_handle parent_handle;
+    struct acpi_device *ad = NULL;
+
+    if (ACPI_FAILURE(acpi_get_parent(dis_handle, &parent_handle))) {
+        pr_warn("Failed to obtain the parent device\n");
+        return false;
+    }
+
+    acpi_bus_get_device(parent_handle, &ad);
+    if (!ad) {
+        pr_warn("Failed to obtain an ACPI device for handle\n");
+        return false;
+    }
+
+    return ad->power.flags.power_resources;
+}
+
 static int bbswitch_acpi_off(void) {
     if (dsm_type == DSM_TYPE_NVIDIA) {
         char args[] = {2, 0, 0, 0};
@@ -436,7 +456,9 @@ static int __init bbswitch_init(void) {
         return -ENODEV;
     }
 
-    if (!skip_optimus_dsm &&
+    if (has_pr3_support()) {
+        pr_info("skipping _DSM as _PR3 support is detected\n");
+    } else if (!skip_optimus_dsm &&
             has_dsm_func(acpi_optimus_dsm_muid, 0x100, 0x1A)) {
         dsm_type = DSM_TYPE_OPTIMUS;
         pr_info("detected an Optimus _DSM function\n");
