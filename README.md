@@ -165,3 +165,9 @@ issues on this module in the issue tracker and provide the following details:
 
 Upload the generated tarball on the above Launchpad URL and provide a link to
 the comment containing your report.
+
+TODO
+----
+With the new PCI device approach, if load_state=0, then starting bumblebeed will
+unload bbswitch. Fix Bumblebee not to unload the module when the PM method is
+bbswitch and the loaded module is bbswitch.

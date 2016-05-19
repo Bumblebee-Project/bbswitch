@@ -8,6 +8,16 @@
  * # echo ON > /proc/acpi/bbswitch
  * Get status
  * # cat /proc/acpi/bbswitch
+ *
+ * Note: only one PCI driver (bbswitch, nouveau, etc.) can bind to a PCI device.
+ * When turning a device OFF, bbswitch tries to bind itself to the PCI device.
+ * When turning a device ON, bbswitch unbinds a device (if it was bound) before
+ * returning from the write.
+ *
+ * TODO is this true?
+ * The new dual module approach is used to allow for backwards compatibility,
+ * Bumblebee unloads any driver that is loaded for a device, that would however
+ * result in unloading the main bbswitch module.
  */
 /*
  *  Copyright (C) 2011-2013 Bumblebee Project
