@@ -48,7 +48,6 @@ static int bbswitch_runtime_suspend(struct device *dev) {
     pci_save_state(pdev);
     /* TODO if _PR3 is supported, should this be PCI_D3hot? */
     pci_set_power_state(pdev, PCI_D3cold);
-    mdelay(1000);
     return 0;
 }
 
@@ -57,7 +56,6 @@ static int bbswitch_runtime_resume(struct device *dev) {
 
     /* TODO for v1 Optimus, call DSM here. */
     /* Nothing to do for Optimus, the PCI layer already moved into D0 state. */
-    mdelay(1000);
     return 0;
 }
 
