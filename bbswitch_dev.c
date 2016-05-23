@@ -26,14 +26,18 @@ static int bbswitch_pci_probe(struct pci_dev *dev, const struct pci_device_id *i
     pci_ignore_hotplug(dev);
 
     pm_runtime_set_active(&dev->dev); /* clear any errors */
+    /* Use autosuspend to avoid lspci waking up the device multiple times. */
+    pm_runtime_set_autosuspend_delay(&dev->dev, 2000);
+    pm_runtime_use_autosuspend(&dev->dev);
     pm_runtime_allow(&dev->dev);
-    pm_runtime_put_noidle(&dev->dev);
+    pm_runtime_put_autosuspend(&dev->dev);
     return 0;
 }
 
 static void bbswitch_pci_remove(struct pci_dev *dev)
 {
     pm_runtime_get_noresume(&dev->dev);
+    pm_runtime_dont_use_autosuspend(&dev->dev);
 }
 
 static int bbswitch_runtime_suspend(struct device *dev) {
