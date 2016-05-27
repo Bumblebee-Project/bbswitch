@@ -38,6 +38,7 @@ static void bbswitch_pci_remove(struct pci_dev *dev)
 {
     pm_runtime_get_noresume(&dev->dev);
     pm_runtime_dont_use_autosuspend(&dev->dev);
+    pm_runtime_forbid(&dev->dev);
 }
 
 static int bbswitch_runtime_suspend(struct device *dev) {
