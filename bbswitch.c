@@ -91,6 +91,8 @@ http://lxr.linux.no/#linux+v3.1.5/drivers/gpu/drm/i915/intel_acpi.c
 #define DSM_TYPE_NVIDIA         2
 static int dsm_type = DSM_TYPE_UNSUPPORTED;
 
+/* The cached name of the discrete device (of the form "0000:01:00.0"). */
+static char dis_dev_name[16];
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
 
@@ -338,7 +340,7 @@ static ssize_t bbswitch_proc_write(struct file *fp, const char __user *buff,
 static int bbswitch_proc_show(struct seq_file *seqfp, void *p) {
     // show the card state. Example output: 0000:01:00:00 ON
     dis_dev_get();
-    seq_printf(seqfp, "%s %s\n", dev_name(&dis_dev->dev),
+    seq_printf(seqfp, "%s %s\n", dis_dev_name,
              is_card_disabled() ? "OFF" : "ON");
     dis_dev_put();
     return 0;
@@ -422,6 +424,7 @@ static int __init bbswitch_init(void) {
             pr_info("Found integrated VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
         } else {
+            strlcpy(dis_dev_name, dev_name(&pdev->dev), sizeof(dis_dev_name));
             dis_dev = pdev;
             dis_handle = handle;
             pr_info("Found discrete VGA device %s: %s\n",
@@ -476,7 +479,7 @@ static int __init bbswitch_init(void) {
         bbswitch_off();
 
     pr_info("Succesfully loaded. Discrete card %s is %s\n",
-        dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
+        dis_dev_name, is_card_disabled() ? "off" : "on");
 
     dis_dev_put();
 
