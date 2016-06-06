@@ -96,9 +96,6 @@ static char dis_dev_name[16];
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
 
-/* whether the card was off before suspend or not; on: 0, off: 1 */
-static int dis_before_suspend_disabled;
-
 static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
     for (i=0; i<n; i++) {
@@ -349,49 +346,12 @@ static int bbswitch_proc_open(struct inode *inode, struct file *file) {
     return single_open(file, bbswitch_proc_show, NULL);
 }
 
-static int bbswitch_pm_handler(struct notifier_block *nbp,
-    unsigned long event_type, void *p) {
-    switch (event_type) {
-    case PM_HIBERNATION_PREPARE:
-    case PM_SUSPEND_PREPARE:
-        dis_dev_get();
-        dis_before_suspend_disabled = is_card_disabled();
-        // enable the device before suspend to avoid the PCI config space from
-        // being saved incorrectly
-        if (dis_before_suspend_disabled)
-            bbswitch_on();
-        dis_dev_put();
-        break;
-    case PM_POST_HIBERNATION:
-    case PM_POST_SUSPEND:
-    case PM_POST_RESTORE:
-        // after suspend, the card is on, but if it was off before suspend,
-        // disable it again
-        if (dis_before_suspend_disabled) {
-            dis_dev_get();
-            bbswitch_off();
-            dis_dev_put();
-        }
-        break;
-    case PM_RESTORE_PREPARE:
-        // deliberately don't do anything as it does not occur before suspend
-        // nor hibernate, but before restoring a saved image. In that case,
-        // either PM_POST_HIBERNATION or PM_POST_RESTORE will be called
-        break;
-    }
-    return 0;
-}
-
 static struct file_operations bbswitch_fops = {
     .open   = bbswitch_proc_open,
     .read   = seq_read,
     .write  = bbswitch_proc_write,
     .llseek = seq_lseek,
     .release= single_release
-};
-
-static struct notifier_block nb = {
-    .notifier_call = &bbswitch_pm_handler
 };
 
 static int __init bbswitch_init(void) {
@@ -483,8 +443,6 @@ static int __init bbswitch_init(void) {
 
     dis_dev_put();
 
-    register_pm_notifier(&nb);
-
     return 0;
 }
 
@@ -502,9 +460,6 @@ static void __exit bbswitch_exit(void) {
         dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
 
     dis_dev_put();
-
-    if (nb.notifier_call)
-        unregister_pm_notifier(&nb);
 }
 
 module_init(bbswitch_init);
