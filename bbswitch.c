@@ -35,6 +35,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/pm_domain.h>
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
@@ -93,8 +94,13 @@ static int dsm_type = DSM_TYPE_UNSUPPORTED;
 
 /* The cached name of the discrete device (of the form "0000:01:00.0"). */
 static char dis_dev_name[16];
+/* dis_dev is non-NULL iff it is currently bound by bbswitch (and off). */
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
+
+/* The PM domain that wraps the PCI device, used to ensure that power is
+ * available before the device is put in D0. ("Nvidia" DSM and PR3). */
+static struct dev_pm_domain pm_domain;
 
 static char *buffer_to_string(const char *buffer, size_t n, char *target) {
     int i;
@@ -233,82 +239,167 @@ static int bbswitch_acpi_on(void) {
 
 // Returns 1 if the card is disabled, 0 if enabled
 static int is_card_disabled(void) {
-    u32 cfg_word;
-    // read first config word which contains Vendor and Device ID. If all bits
-    // are enabled, the device is assumed to be off
-    pci_read_config_dword(dis_dev, 0, &cfg_word);
-    // if one of the bits is not enabled (the card is enabled), the inverted
-    // result will be non-zero and hence logical not will make it 0 ("false")
-    return !~cfg_word;
+    /* Assume that the device is disabled when our PCI driver found a device. */
+    return dis_dev != NULL;
 }
 
-static void bbswitch_off(void) {
-    if (is_card_disabled())
-        return;
 
-    // to prevent the system from possibly locking up, don't disable the device
-    // if it's still in use by a driver (i.e. nouveau or nvidia)
-    if (dis_dev->driver) {
-        pr_warn("device %s is in use by driver '%s', refusing OFF\n",
-            dev_name(&dis_dev->dev), dis_dev->driver->name);
-        return;
-    }
+/* Power source handling. */
+
+static int bbswitch_pmd_runtime_suspend(struct device *dev)
+{
+    int ret;
+
+    pr_debug("Preparing for runtime suspend.\n");
+
+    /* Put the device in D3. */
+    ret = dev->bus->pm->runtime_suspend(dev);
+    if (ret)
+        return ret;
+
+    bbswitch_acpi_off();
+    /* TODO For PR3, disable them. */
+    return 0;
+}
+
+static int bbswitch_pmd_runtime_resume(struct device *dev)
+{
+    pr_info("enabling discrete graphics\n");
+
+    bbswitch_acpi_on();
+    /* TODO For PR3, enable them. */
+
+    /* Now ensure that the device is actually put in D0 by PCI. */
+    return dev->bus->pm->runtime_resume(dev);
+}
+
+static void bbswitch_pmd_set(struct device *dev)
+{
+    pm_domain.ops = *dev->bus->pm;
+    pm_domain.ops.runtime_resume = bbswitch_pmd_runtime_resume;
+    pm_domain.ops.runtime_suspend = bbswitch_pmd_runtime_suspend;
+    dev_pm_domain_set(dev, &pm_domain);
+}
+
+
+/* Nvidia device itself. */
+
+static int bbswitch_pci_runtime_suspend(struct device *dev)
+{
+    struct pci_dev *pdev = to_pci_dev(dev);
 
     pr_info("disabling discrete graphics\n");
 
-    if (bbswitch_optimus_dsm()) {
-        pr_warn("Optimus ACPI call failed, the device is not disabled\n");
+    bbswitch_optimus_dsm();
+
+    /* Save state now that the device is still awake, makes PCI layer happy */
+    pci_save_state(pdev);
+    /* TODO if _PR3 is supported, should this be PCI_D3hot? */
+    pci_set_power_state(pdev, PCI_D3hot);
+    return 0;
+}
+
+static int bbswitch_pci_runtime_resume(struct device *dev)
+{
+    pr_debug("Finishing runtime resume.\n");
+
+    return 0;
+}
+
+static const struct dev_pm_ops bbswitch_pci_pm_ops = {
+    .runtime_suspend = bbswitch_pci_runtime_suspend,
+    .runtime_resume = bbswitch_pci_runtime_resume,
+    /* No runtime_idle callback, the default zero delay is sufficient. */
+};
+
+static int bbswitch_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+{
+    /* Only bind to the device which we discovered before. */
+    if (strcmp(dev_name(&pdev->dev), dis_dev_name))
+        return -ENODEV;
+
+    pr_debug("Found PCI device\n");
+    dis_dev = pdev;
+
+    bbswitch_pmd_set(&pdev->dev);
+
+    /* Prevent kernel from detaching the PCI device for some devices that
+     * generate hotplug events. The graphics card is typically not physically
+     * removable. */
+    pci_ignore_hotplug(pdev);
+
+    pm_runtime_set_active(&pdev->dev); /* clear any errors */
+    /* Use autosuspend to avoid lspci waking up the device multiple times. */
+    pm_runtime_set_autosuspend_delay(&pdev->dev, 2000);
+    pm_runtime_use_autosuspend(&pdev->dev);
+    pm_runtime_allow(&pdev->dev);
+    pm_runtime_put_autosuspend(&pdev->dev);
+    return 0;
+}
+
+static void bbswitch_pci_remove(struct pci_dev *pdev)
+{
+    pr_debug("Removing PCI device\n");
+
+    pm_runtime_get_noresume(&pdev->dev);
+    pm_runtime_dont_use_autosuspend(&pdev->dev);
+    pm_runtime_forbid(&pdev->dev);
+
+    dev_pm_domain_set(&pdev->dev, NULL);
+
+    dis_dev = NULL;
+}
+
+static const struct pci_device_id pciidlist[] = {
+    { PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
+      PCI_CLASS_DISPLAY_VGA << 8, 0xffff00 },
+    { PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
+      PCI_CLASS_DISPLAY_3D << 8, 0xffff00 },
+    { 0, 0, 0 },
+};
+
+static struct pci_driver bbswitch_pci_driver = {
+    .name = KBUILD_MODNAME,
+    .id_table = pciidlist,
+    .probe  = bbswitch_pci_probe,
+    .remove = bbswitch_pci_remove,
+    .driver.pm = &bbswitch_pci_pm_ops,
+};
+
+
+static void bbswitch_off(void) {
+    int ret;
+
+    /* Do nothing if the device was disabled before. */
+    if (dis_dev)
+        return;
+
+    ret = pci_register_driver(&bbswitch_pci_driver);
+    if (ret) {
+        pr_warn("Cannot register PCI device\n");
         return;
     }
 
-    pci_save_state(dis_dev);
-    pci_clear_master(dis_dev);
-    pci_disable_device(dis_dev);
-    do {
-        struct acpi_device *ad = NULL;
-        int r;
+    /* If the probe failed, remove the driver such that it can be reprobed on
+     * the next registration. */
+    if (!dis_dev) {
+#if 0
+        /* TODO discover the other driver name if possible. */
+        pr_warn("device %s is in use by driver '%s', refusing OFF\n",
+            dev_name(&dis_dev->dev), dis_dev->driver->name);
+#endif
 
-        r = acpi_bus_get_device(dis_handle, &ad);
-        if (r || !ad) {
-            pr_warn("Cannot get ACPI device for PCI device\n");
-            break;
-        }
-        if (ad->power.state == ACPI_STATE_UNKNOWN) {
-            pr_debug("ACPI power state is unknown, forcing D0\n");
-            ad->power.state = ACPI_STATE_D0;
-        }
-    } while (0);
-    pci_set_power_state(dis_dev, PCI_D3cold);
-
-    if (bbswitch_acpi_off())
-        pr_warn("The discrete card could not be disabled by a _DSM call\n");
+        pr_warn("Could not bind to device, is it in use by an other driver?\n");
+        pci_unregister_driver(&bbswitch_pci_driver);
+    }
 }
 
 static void bbswitch_on(void) {
-    if (!is_card_disabled())
+    /* Do nothing if no device exists that was previously disabled. */
+    if (!dis_dev)
         return;
 
-    pr_info("enabling discrete graphics\n");
-
-    if (bbswitch_acpi_on())
-        pr_warn("The discrete card could not be enabled by a _DSM call\n");
-
-    pci_set_power_state(dis_dev, PCI_D0);
-    pci_restore_state(dis_dev);
-    if (pci_enable_device(dis_dev))
-        pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
-    pci_set_master(dis_dev);
-}
-
-/* power bus so we can read PCI configuration space */
-static void dis_dev_get(void) {
-    if (dis_dev->bus && dis_dev->bus->self)
-        pm_runtime_get_sync(&dis_dev->bus->self->dev);
-}
-
-static void dis_dev_put(void) {
-    if (dis_dev->bus && dis_dev->bus->self)
-        pm_runtime_put_sync(&dis_dev->bus->self->dev);
+    pci_unregister_driver(&bbswitch_pci_driver);
 }
 
 static ssize_t bbswitch_proc_write(struct file *fp, const char __user *buff,
@@ -321,25 +412,19 @@ static ssize_t bbswitch_proc_write(struct file *fp, const char __user *buff,
     if (copy_from_user(cmd, buff, len))
         return -EFAULT;
 
-    dis_dev_get();
-
     if (strncmp(cmd, "OFF", 3) == 0)
         bbswitch_off();
 
     if (strncmp(cmd, "ON", 2) == 0)
         bbswitch_on();
 
-    dis_dev_put();
-
     return len;
 }
 
 static int bbswitch_proc_show(struct seq_file *seqfp, void *p) {
     // show the card state. Example output: 0000:01:00:00 ON
-    dis_dev_get();
     seq_printf(seqfp, "%s %s\n", dis_dev_name,
              is_card_disabled() ? "OFF" : "ON");
-    dis_dev_put();
     return 0;
 }
 static int bbswitch_proc_open(struct inode *inode, struct file *file) {
@@ -385,7 +470,6 @@ static int __init bbswitch_init(void) {
                 dev_name(&pdev->dev), (char *)buf.pointer);
         } else {
             strlcpy(dis_dev_name, dev_name(&pdev->dev), sizeof(dis_dev_name));
-            dis_dev = pdev;
             dis_handle = handle;
             pr_info("Found discrete VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
@@ -393,7 +477,7 @@ static int __init bbswitch_init(void) {
         kfree(buf.pointer);
     }
 
-    if (dis_dev == NULL) {
+    if (dis_handle == NULL) {
         pr_err("No discrete VGA device found\n");
         return -ENODEV;
     }
@@ -425,23 +509,11 @@ static int __init bbswitch_init(void) {
         return -ENOMEM;
     }
 
-    dis_dev_get();
-
-    if (!is_card_disabled()) {
-        /* We think the card is enabled, so ensure the kernel does as well */
-        if (pci_enable_device(dis_dev))
-            pr_warn("failed to enable %s\n", dev_name(&dis_dev->dev));
-    }
-
-    if (load_state == CARD_ON)
-        bbswitch_on();
-    else if (load_state == CARD_OFF)
+    if (load_state == CARD_OFF)
         bbswitch_off();
 
     pr_info("Succesfully loaded. Discrete card %s is %s\n",
         dis_dev_name, is_card_disabled() ? "off" : "on");
-
-    dis_dev_put();
 
     return 0;
 }
@@ -449,17 +521,8 @@ static int __init bbswitch_init(void) {
 static void __exit bbswitch_exit(void) {
     remove_proc_entry("bbswitch", acpi_root_dir);
 
-    dis_dev_get();
-
-    if (unload_state == CARD_ON)
-        bbswitch_on();
-    else if (unload_state == CARD_OFF)
-        bbswitch_off();
-
-    pr_info("Unloaded. Discrete card %s is %s\n",
-        dev_name(&dis_dev->dev), is_card_disabled() ? "off" : "on");
-
-    dis_dev_put();
+    bbswitch_on();
+    pr_info("Unloaded\n");
 }
 
 module_init(bbswitch_init);
