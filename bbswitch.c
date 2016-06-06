@@ -36,6 +36,7 @@
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_domain.h>
+#include <linux/vga_switcheroo.h>
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
@@ -290,6 +291,9 @@ static int bbswitch_pci_runtime_suspend(struct device *dev)
 
     pr_info("disabling discrete graphics\n");
 
+    /* Ensure that the audio driver knows not to touch us. */
+    vga_switcheroo_set_dynamic_switch(pdev, VGA_SWITCHEROO_OFF);
+
     bbswitch_optimus_dsm();
 
     /* Save state now that the device is still awake, makes PCI layer happy */
@@ -301,8 +305,12 @@ static int bbswitch_pci_runtime_suspend(struct device *dev)
 
 static int bbswitch_pci_runtime_resume(struct device *dev)
 {
+    struct pci_dev *pdev = to_pci_dev(dev);
+
     pr_debug("Finishing runtime resume.\n");
 
+    /* Resume audio driver. */
+    vga_switcheroo_set_dynamic_switch(pdev, VGA_SWITCHEROO_ON);
     return 0;
 }
 
@@ -310,6 +318,43 @@ static const struct dev_pm_ops bbswitch_pci_pm_ops = {
     .runtime_suspend = bbswitch_pci_runtime_suspend,
     .runtime_resume = bbswitch_pci_runtime_resume,
     /* No runtime_idle callback, the default zero delay is sufficient. */
+};
+
+static int bbswitch_switcheroo_switchto(enum vga_switcheroo_client_id id)
+{
+    /* We do not support switching, only power on/off. */
+    return -ENOSYS;
+}
+
+static enum vga_switcheroo_client_id bbswitch_switcheroo_get_client_id(struct pci_dev *pdev)
+{
+    /* Our registered client is always the discrete GPU. */
+    return VGA_SWITCHEROO_DIS;
+}
+
+static const struct vga_switcheroo_handler bbswitch_handler = {
+    .switchto = bbswitch_switcheroo_switchto,
+    .get_client_id = bbswitch_switcheroo_get_client_id,
+};
+
+
+static void bbswitch_switcheroo_set_gpu_state(struct pci_dev *pdev, enum vga_switcheroo_state state)
+{
+    /* Nothing to do, we handle the PM domain ourselves. Perhaps we can add
+     * backwards compatibility with older kernels in this way and workaround
+     * bugs? */
+    pr_debug("set_gpu_state to %s\n", state == VGA_SWITCHEROO_ON ? "ON" : "OFF");
+}
+
+static bool bbswitch_switcheroo_can_switch(struct pci_dev *pdev)
+{
+    /* We do not support switching between IGD/DIS. */
+    return false;
+}
+
+static const struct vga_switcheroo_client_ops bbswitch_switcheroo_ops = {
+    .set_gpu_state = bbswitch_switcheroo_set_gpu_state,
+    .can_switch = bbswitch_switcheroo_can_switch,
 };
 
 static int bbswitch_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
@@ -322,6 +367,12 @@ static int bbswitch_pci_probe(struct pci_dev *pdev, const struct pci_device_id *
     dis_dev = pdev;
 
     bbswitch_pmd_set(&pdev->dev);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
+    vga_switcheroo_register_handler(&bbswitch_handler, 0);
+#else
+    vga_switcheroo_register_handler(&bbswitch_handler);
+#endif
+    vga_switcheroo_register_client(pdev, &bbswitch_switcheroo_ops, true);
 
     /* Prevent kernel from detaching the PCI device for some devices that
      * generate hotplug events. The graphics card is typically not physically
@@ -345,6 +396,8 @@ static void bbswitch_pci_remove(struct pci_dev *pdev)
     pm_runtime_dont_use_autosuspend(&pdev->dev);
     pm_runtime_forbid(&pdev->dev);
 
+    vga_switcheroo_unregister_client(pdev);
+    vga_switcheroo_unregister_handler();
     dev_pm_domain_set(&pdev->dev, NULL);
 
     dis_dev = NULL;
