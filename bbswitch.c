@@ -35,6 +35,11 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#   define ACPI_HANDLE DEVICE_ACPI_HANDLE
+#endif
 
 #define BBSWITCH_VERSION "0.8"
 
@@ -403,13 +408,7 @@ static int __init bbswitch_init(void) {
             pci_class != PCI_CLASS_DISPLAY_3D)
             continue;
 
-#ifdef ACPI_HANDLE
-        /* since Linux 3.8 */
         handle = ACPI_HANDLE(&pdev->dev);
-#else
-        /* removed since Linux 3.13 */
-        handle = DEVICE_ACPI_HANDLE(&pdev->dev);
-#endif
         if (!handle) {
             pr_warn("cannot find ACPI handle for VGA device %s\n",
                 dev_name(&pdev->dev));
