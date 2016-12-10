@@ -59,6 +59,40 @@ To uninstall it, run:
 
     # make -f Makefile.dkms uninstall
 
+Lenovo IdeaPad Y470/Y570 and Toshiba SATELLITE P870
+---------------------------------------------------
+Until [this kernel bug](https://bugzilla.kernel.org/show_bug.cgi?id=42696) is
+fixed, you need to apply an ugly hack on these laptops to make bbswitch and the
+driver (both nouveau and nvidia) work. For now I have decided not to put the
+hack in the bbswitch module since it is a very ugly hack that is comparable to
+writing a maximum allowable speed of 130 km/h on a traffic sign for a road
+where 120 km/h is allowed just because the radar gun does not work properly.
+
+The module has been tested on a Lenovo IdeaPad Y570 running an up-to-date
+version of Ubuntu 11.10 Oneiric (64-bit) with Bumblebee 3.0 (3.0-1~oneiricppa2)
+installed using the nvidia driver.
+
+To make use of it, use the `hack-lenovo` branch. An example using DKMS:
+
+    $ git clone git://github.com/Bumblebee-Project/bbswitch.git -b hack-lenovo
+    $ cd bbswitch
+    # mkdir /usr/src/acpi-handle-hack-0.0.2
+    # cp Makefile acpi-handle-hack.c /usr/src/acpi-handle-hack-0.0.2
+    # cp dkms/acpi-handle-hack.conf /usr/src/acpi-handle-hack-0.0.2/dkms.conf
+    # dkms install -m acpi-handle-hack -v 0.0.2
+If everything goes well, you now need to get the hack loaded on boot. On
+Ubuntu and Debian, this can be done with:
+
+    echo acpi-handle-hack | sudo tee -a /etc/modules
+    sudo update-initramfs -u
+For other systems, adopt the instructions from the *Disable card on boot*
+section below. Please do not copy these instructions to blogs/forums/whatever
+without warning that the method is a hack (you can refer to the metaphore above)
+and that it may crash the machine if incorrectly applied. To apply these
+changes, you have to reboot (technically, unloading nvidia/nouveau, bbswitch and
+stopping bumblebeed, `modprobe acpi-handle-hack` and starting bumblebeed should
+work as well, but saying reboot is shorter)
+
 Usage
 -----
 
