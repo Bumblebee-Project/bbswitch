@@ -31,7 +31,7 @@
 #include <linux/pci.h>
 #include <linux/acpi.h>
 #include <linux/module.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
