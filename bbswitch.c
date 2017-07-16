@@ -86,6 +86,7 @@ http://lxr.linux.no/#linux+v3.1.5/drivers/gpu/drm/i915/intel_acpi.c
 #define DSM_TYPE_NVIDIA         2
 static int dsm_type = DSM_TYPE_UNSUPPORTED;
 
+static struct pci_dev *port_dev;
 static struct pci_dev *dis_dev;
 static acpi_handle dis_handle;
 
@@ -278,6 +279,12 @@ static void bbswitch_off(void) {
 
     if (bbswitch_acpi_off())
         pr_warn("The discrete card could not be disabled by a _DSM call\n");
+
+    /* Swith off root port */
+    pci_save_state(port_dev);
+    pci_clear_master(port_dev);
+    pci_disable_device(port_dev);
+    pci_set_power_state(port_dev, PCI_D3hot);
 }
 
 static void bbswitch_on(void) {
@@ -285,6 +292,13 @@ static void bbswitch_on(void) {
         return;
 
     pr_info("enabling discrete graphics\n");
+
+    /* Re-enable port */
+    pci_set_power_state(port_dev, PCI_D0);
+    pci_restore_state(port_dev);
+    if (pci_enable_device(port_dev))
+        pr_warn("failed to enable %s\n", dev_name(&port_dev->dev));
+    pci_set_master(port_dev);
 
     if (bbswitch_acpi_on())
         pr_warn("The discrete card could not be enabled by a _DSM call\n");
@@ -423,10 +437,11 @@ static int __init bbswitch_init(void) {
             pr_info("Found integrated VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
         } else {
+            port_dev = pci_upstream_bridge(pdev);
             dis_dev = pdev;
             dis_handle = handle;
-            pr_info("Found discrete VGA device %s: %s\n",
-                dev_name(&pdev->dev), (char *)buf.pointer);
+            pr_info("Found discrete VGA device %s (on %s): %s\n",
+                dev_name(&dis_dev->dev), dev_name(&port_dev->dev), (char *)buf.pointer);
         }
         kfree(buf.pointer);
     }
