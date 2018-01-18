@@ -19,6 +19,21 @@ MODULE_AUTHOR("Peter Wu <peter@lekensteyn.nl>");
 
 static int bbswitch_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
+    /* TODO Reset the device in driver */
+    /* After nvidia.ko gets unloaded, sometimes the device refuses to change
+     * its power state from D0 to D3.
+     * Doing a pci reset can workaound this issue, but I haven't found a way
+     * to do this in driver.
+     * Right now, please run `echo 1 > /sys/bus/pci/devices/xxxx/reset`
+     * before binding the driver to the device.
+     */
+    #if 0
+    pci_reset_function(dev);
+    #endif
+
+    /* Enable D3cold to turn on bridge D3 */
+    pci_d3cold_enable(dev);
+
     /* TODO how to discover devices? */
     /* Prevent kernel from detaching the PCI device for some devices that
      * generate hotplug events. The graphics card is typically not physically
@@ -39,6 +54,10 @@ static void bbswitch_pci_remove(struct pci_dev *dev)
     pm_runtime_get_noresume(&dev->dev);
     pm_runtime_dont_use_autosuspend(&dev->dev);
     pm_runtime_forbid(&dev->dev);
+
+    /* Disable D3cold to turn off bridge D3.
+     * nvidia.ko doesn't like its bridge gets put into D3 */
+    pci_d3cold_disable(dev);
 }
 
 static int bbswitch_runtime_suspend(struct device *dev) {
