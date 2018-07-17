@@ -22,15 +22,25 @@ detect the correct handle preceding _DSM and has some built-in safeguards:
   disabled again if that was the case before suspending. Hibernation should
   work, but it not tested.
 
-Precautionary measure : 
-- On some machines, turning off the card is permanent and the card does not
-  reappear on subsequents reboots, which can result into the screen staying
-  black all the time, including the BIOS screen.
-  If it occurs, first try to shutdown, unplug power cord, remove battery, wait
-  30s, then put everything back in and boot. If it's not solved, then the
-  solution is to reset the BIOS to factory settings. Before executing bbswitch
-  for the first time, it is therefore recommended to take note of the full key
-  sequence in the BIOS to do a reset. 
+Preparation
+-----------
+
+### Precautionary measure
+
+On some machines, turning off the card is permanent and the card does not
+reappear on subsequents reboots, which can result into the screen staying
+black all the time, including the BIOS screen.
+If it occurs, first try to shutdown, unplug power cord, remove battery, wait
+30s, then put everything back in and boot. If it's not solved, then the
+solution is to reset the BIOS to factory settings. Before executing bbswitch
+for the first time, it is therefore recommended to **take note of the full key
+sequence in the BIOS to do a reset**.
+
+### acpi_rev_override
+
+On some computers (such as the Dell XPS 15 9560, [issue](https://github.com/Bumblebee-Project/bbswitch/issues/148)), you may have to set the `acpi_rev_override` parameter to `1` (`acpi_rev_override=1`). The absence of this parameter may cause a black screen at system boot.
+
+See [this article](https://wiki.archlinux.org/index.php/Kernel_parameters) for setting and persisting kernel parameters.
 
 Build
 -----
