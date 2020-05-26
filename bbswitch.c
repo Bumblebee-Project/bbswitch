@@ -35,6 +35,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/proc_fs.h>
 #include <linux/version.h>
 
 #define BBSWITCH_VERSION "0.8"
