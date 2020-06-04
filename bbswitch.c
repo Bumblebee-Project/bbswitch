@@ -35,6 +35,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/version.h>
 
 #define BBSWITCH_VERSION "0.8"
 
@@ -375,13 +376,25 @@ static int bbswitch_pm_handler(struct notifier_block *nbp,
     return 0;
 }
 
-static struct file_operations bbswitch_fops = {
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,6,15)
+// This struct change was introduced in 5.6.16 - STABLE
+// see: https://lore.kernel.org/lkml/20191225172546.GB13378@avx2/
+static struct proc_ops bbswitch_pops = {
+    .proc_open   = bbswitch_proc_open,
+    .proc_read   = seq_read,
+    .proc_write  = bbswitch_proc_write,
+    .proc_lseek = seq_lseek,
+    .proc_release= single_release
+};
+#else
+static struct file_operations bbswitch_pops = {
     .open   = bbswitch_proc_open,
     .read   = seq_read,
     .write  = bbswitch_proc_write,
     .llseek = seq_lseek,
     .release= single_release
 };
+#endif
 
 static struct notifier_block nb = {
     .notifier_call = &bbswitch_pm_handler
@@ -457,7 +470,7 @@ static int __init bbswitch_init(void) {
         }
     }
 
-    acpi_entry = proc_create("bbswitch", 0664, acpi_root_dir, &bbswitch_fops);
+    acpi_entry = proc_create("bbswitch", 0664, acpi_root_dir, &bbswitch_pops);
     if (acpi_entry == NULL) {
         pr_err("Couldn't create proc entry\n");
         return -ENOMEM;
