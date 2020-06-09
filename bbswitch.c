@@ -35,6 +35,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/version.h>
 
 #define BBSWITCH_VERSION "0.8"
 
@@ -375,6 +376,7 @@ static int bbswitch_pm_handler(struct notifier_block *nbp,
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
 static struct file_operations bbswitch_fops = {
     .open   = bbswitch_proc_open,
     .read   = seq_read,
@@ -382,6 +384,16 @@ static struct file_operations bbswitch_fops = {
     .llseek = seq_lseek,
     .release= single_release
 };
+#else
+static struct proc_ops bbswitch_fops = {
+    .proc_open    = bbswitch_proc_open,
+    .proc_read    = seq_read,
+    .proc_write   = bbswitch_proc_write,
+    .proc_lseek   = seq_lseek,
+    .proc_release = single_release
+};
+#endif
+
 
 static struct notifier_block nb = {
     .notifier_call = &bbswitch_pm_handler
