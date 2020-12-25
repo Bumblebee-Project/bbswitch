@@ -35,6 +35,9 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/pm_runtime.h>
+#include <linux/proc_fs.h>
+
 
 #define BBSWITCH_VERSION "0.8"
 
@@ -76,7 +79,7 @@ The next UUID has been found as well in
 https://bugs.launchpad.net/lpbugreporter/+bug/752542:
 
 0xD3, 0x73, 0xD8, 0x7E, 0xD0, 0xC2, 0x4F, 0x4E,
-0xA8, 0x54, 0x0F, 0x13, 0x17, 0xB0, 0x1C, 0x2C 
+0xA8, 0x54, 0x0F, 0x13, 0x17, 0xB0, 0x1C, 0x2C
 It looks like something for Intel GPU:
 http://lxr.linux.no/#linux+v3.1.5/drivers/gpu/drm/i915/intel_acpi.c
  */
