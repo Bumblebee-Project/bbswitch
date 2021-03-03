@@ -30,6 +30,7 @@
 
 #include <linux/pci.h>
 #include <linux/acpi.h>
+#include <linux/proc_fs.h>
 #include <linux/module.h>
 #include <asm/uaccess.h>
 #include <linux/suspend.h>
@@ -375,12 +376,12 @@ static int bbswitch_pm_handler(struct notifier_block *nbp,
     return 0;
 }
 
-static struct file_operations bbswitch_fops = {
-    .open   = bbswitch_proc_open,
-    .read   = seq_read,
-    .write  = bbswitch_proc_write,
-    .llseek = seq_lseek,
-    .release= single_release
+static struct proc_ops bbswitch_fops = {
+    .proc_open   = bbswitch_proc_open,
+    .proc_read   = seq_read,
+    .proc_write  = bbswitch_proc_write,
+    .proc_lseek = seq_lseek,
+    .proc_release = single_release
 };
 
 static struct notifier_block nb = {
