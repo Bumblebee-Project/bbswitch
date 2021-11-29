@@ -262,6 +262,7 @@ static void bbswitch_off(void) {
     pci_save_state(dis_dev);
     pci_clear_master(dis_dev);
     pci_disable_device(dis_dev);
+#ifdef CONFIG_ACPI
     do {
         struct acpi_device *ad = NULL;
         int r;
@@ -276,6 +277,7 @@ static void bbswitch_off(void) {
             ad->power.state = ACPI_STATE_D0;
         }
     } while (0);
+#endif
     pci_set_power_state(dis_dev, PCI_D3cold);
 
     if (bbswitch_acpi_off())
