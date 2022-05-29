@@ -265,10 +265,8 @@ static void bbswitch_off(void) {
 #ifdef CONFIG_ACPI
     do {
         struct acpi_device *ad = NULL;
-        int r;
-
-        r = acpi_bus_get_device(dis_handle, &ad);
-        if (r || !ad) {
+        ad = acpi_fetch_acpi_dev(dis_handle);
+        if (!ad) {
             pr_warn("Cannot get ACPI device for PCI device\n");
             break;
         }
@@ -432,7 +430,7 @@ static int __init bbswitch_init(void) {
 
         acpi_get_name(handle, ACPI_FULL_PATHNAME, &buf);
 
-        if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
+        if (pdev->vendor == PCI_VENDOR_ID_ATI) {
             igd_handle = handle;
             pr_info("Found integrated VGA device %s: %s\n",
                 dev_name(&pdev->dev), (char *)buf.pointer);
